@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<ruleset name="Clean SEO &amp; Ads AI Manager">
+	<description>WordPress Coding Standards + PHP-compatibiliteit (7.4+).</description>
+	<file>.</file>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<arg name="extensions" value="php"/>
+	<arg value="sp"/>
+	<config name="testVersion" value="7.4-"/>
+	<config name="minimum_wp_version" value="6.2"/>
+	<rule ref="WordPress">
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+		<exclude name="Generic.Commenting.DocComment.MissingShort"/>
+	</rule>
+	<rule ref="WordPress.WP.I18n">
+		<properties><property name="text_domain" type="array"><element value="clean-seo-ads-ai"/></property></properties>
+	</rule>
+	<rule ref="PHPCompatibilityWP"/>
+</ruleset>
