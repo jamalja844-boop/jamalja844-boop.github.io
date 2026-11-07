@@ -16,7 +16,7 @@ export interface ExistingCatalog {
   importedSourceUrls: Set<string>;
 }
 
-function normalizeUrl(url: string): string {
+export function normalizeUrl(url: string): string {
   const u = new URL(url);
   u.hash = "";
   // Trackingparameters negeren; overige parameters (bv. productvariant) behouden.

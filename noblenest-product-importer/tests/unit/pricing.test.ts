@@ -175,6 +175,30 @@ describe("minimumprijs en afronding", () => {
   });
 });
 
+describe("handmatige verkoopprijs", () => {
+  it("rekent winst en marge vanaf een vaste prijs, zonder afronding of minimumprijs", () => {
+    const result = calculatePrice(
+      { costPrice: 10, currencyCode: "EUR", shippingCost: 2 },
+      { ...baseRule, rounding: "END_99", minimumPrice: 50 },
+      eur,
+      { fixedSellingPrice: "30.25" },
+    );
+    const b = result.breakdown!;
+    expect(b.sellingPrice).toBe("30.25");
+    expect(b.netPrice).toBe("25.00"); // 30,25 / 1,21
+    expect(b.estimatedProfit).toBe("13.00");
+    expect(b.grossMarginPercent).toBe("52.0");
+  });
+
+  it("waarschuwt bij verlies en weigert een ongeldige vaste prijs", () => {
+    const loss = calculatePrice({ costPrice: 20, currencyCode: "EUR", shippingCost: 0 }, baseRule, eur, { fixedSellingPrice: "12.10" });
+    expect(loss.ok).toBe(true);
+    expect(loss.breakdown!.estimatedProfit).toBe("-10.00");
+    expect(loss.issues.map((i) => i.code)).toContain("NEGATIVE_MARGIN");
+    expect(calculatePrice({ costPrice: 20, currencyCode: "EUR" }, baseRule, eur, { fixedSellingPrice: "0" }).ok).toBe(false);
+  });
+});
+
 describe("selectPricingRule", () => {
   const rule = (over: Partial<RuleCandidate>): RuleCandidate => ({
     ...baseRule,

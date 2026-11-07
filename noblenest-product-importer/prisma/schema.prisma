@@ -365,8 +365,11 @@ model ImportJobItem {
   payload           Json
   /// Waarschuwingen (ontbrekende gegevens, regelgeving)
   flags             Json
-  /// Prijsvoorstel op het moment van voorbeeld
+  /// Prijsvoorstel op het moment van voorbeeld (incl. handmatige prijzen van de winkelier)
   pricing           Json?
+  /// Aanpassingen van de winkelier vóór import (titel, teksten, foto's, collecties …).
+  /// De oorspronkelijke leveranciersgegevens in `payload` blijven ongewijzigd.
+  overrides         Json?
   selected          Boolean          @default(true)
   duplicateOf       String?
   status            ImportItemStatus @default(PENDING)

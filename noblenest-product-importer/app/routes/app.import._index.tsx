@@ -5,6 +5,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { requireShop } from "../services/shop.server";
 import { createPreview } from "../services/import.server";
+import { importFromUrl } from "../services/url-import.server";
 import { logAudit } from "../services/audit.server";
 import { checkImportUpload, defaultUploadLimits } from "../lib/security/upload";
 import { detectFormat } from "../lib/import/sources";
@@ -45,6 +46,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const form = await request.formData();
+
+  if (form.get("intent") === "url") {
+    const result = await importFromUrl(shop, user?.id ?? null, String(form.get("url") ?? ""));
+    if (result.kind === "PREVIEW") {
+      const target = `/app/import/${result.jobId}`;
+      return redirect ? redirect(target) : Response.redirect(target, 303);
+    }
+    return { urlMessage: result.message, urlTone: result.tone };
+  }
+
   const file = form.get("file");
   if (!(file instanceof File)) return { error: "Kies een CSV-, XML- of JSON-bestand om te uploaden." };
   const label = String(form.get("label") ?? "").trim().toLowerCase() || null;
@@ -85,8 +96,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function ImportPage() {
   const { jobs, hasPricingRule, maxMb } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
+  const urlFetcher = useFetcher<typeof action>();
   const uploading = fetcher.state !== "idle";
   const error = fetcher.data && "error" in fetcher.data ? fetcher.data.error : null;
+  const urlResult = urlFetcher.data && "urlMessage" in urlFetcher.data ? urlFetcher.data : null;
 
   const labelRef = useRef<HTMLElementTagNameMap["s-text-field"]>(null);
   const rightsRef = useRef<HTMLElementTagNameMap["s-checkbox"]>(null);
@@ -110,6 +123,27 @@ export default function ImportPage() {
           </s-paragraph>
         </s-banner>
       ) : null}
+
+      <s-section heading="Product importeren via URL">
+        <urlFetcher.Form method="post">
+          <input type="hidden" name="intent" value="url" />
+          <s-stack direction="block" gap="base">
+            <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="end">
+              <s-url-field label="Productlink of feed-URL" name="url" required placeholder="https://leverancier.nl/producten/…" autocomplete="off" />
+              <s-button variant="primary" type="submit" loading={urlFetcher.state !== "idle"}>
+                Controleren en voorbeeld maken
+              </s-button>
+            </s-grid>
+            {urlResult ? (
+              <s-banner tone={urlResult.urlTone === "critical" ? "critical" : urlResult.urlTone === "warning" ? "warning" : "info"}>{urlResult.urlMessage}</s-banner>
+            ) : null}
+            <s-text color="subdued">
+              Werkt voor producten uit je gekoppelde feeds en voor directe links naar een productfeed (.xml/.json). Noblenest haalt
+              geen gegevens van losse webpagina’s op.
+            </s-text>
+          </s-stack>
+        </urlFetcher.Form>
+      </s-section>
 
       <s-section heading="Producten importeren uit een bestand">
         <s-stack direction="block" gap="base">
@@ -166,11 +200,11 @@ export default function ImportPage() {
         </s-stack>
       </s-section>
 
-      <s-section heading="Product importeren via URL">
-        <s-paragraph color="subdued">
-          Importeren via een losse productlink volgt in fase 4 en werkt alleen voor leveranciers met een officiële,
-          toegestane koppeling. Tot die tijd importeer je via een bestand of feed.
-        </s-paragraph>
+      <s-section heading="Handmatig invoeren">
+        <s-stack direction="inline" gap="base" alignItems="center">
+          <s-paragraph color="subdued">Geen bestand of feed? Voer een product zelf in, met dezelfde prijs- en kwaliteitscontroles.</s-paragraph>
+          <s-button href="/app/import/manual">Product handmatig invoeren</s-button>
+        </s-stack>
       </s-section>
 
       <s-section heading="Importgeschiedenis">

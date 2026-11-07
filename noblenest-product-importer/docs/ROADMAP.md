@@ -5,7 +5,7 @@
 | **1 — Analyse en setup** | Officieel Shopify-sjabloon, PostgreSQL + Prisma (15 modellen), Docker Compose, configuratie, architectuur | ✅ Gereed |
 | **2 — Werkende basisapp** | Authenticatie, dashboard, instellingen (versleutelde sleutels), prijsregels + calculator, CSV-import met voorbeeld, conceptimport via productSet, duplicaatpreventie, logboek, compliancewebhooks, tests | ✅ Gereed (in ontwikkelwinkel nog te verifiëren) |
 | **3 — Leveranciersintegraties** | Adapterinterface ✅, XML-feed (Google) ✅, JSON-feed ✅, feedbronnen met veilige URL-ophaling en verbindingscontrole ✅, Producten zoeken + vergelijken ✅. AliExpress (Open Platform) en Alibaba: wachten op API-toegang van de leverancier | ✅ Feeds gereed · ⏳ API-adapters |
-| **4 — Productbeheer** | URL-import (alleen geautoriseerde bronnen, SSRF-beveiligd), productvoorbeeld bewerken, afbeeldingenbeheer (volgorde, hoofdfoto, duplicaten, afmetingen), collecties, handmatige invoer, duplicatenoverzicht | Gepland |
+| **4 — Productbeheer** | URL-import (feedproducten en feed-URL's, marktplaatsuitleg, geen scraping) ✅, bewerken in voorbeeld incl. eigen prijzen ✅, afbeeldingenbeheer (selectie, volgorde, hoofdfoto, per variant, afmetingen, duplicaten) ✅, collecties ✅, handmatige invoer ✅, duplicatenoverzicht ✅ | ✅ Gereed |
 | **5 — AI en prijzen** | AI Studio (Claude/OpenAI): titels, beschrijvingen, vertaling, SEO, tags, alt-teksten, ontbrekende info; zonder verzonnen claims; originele data apart | Gepland |
 | **6 — Bulk en synchronisatie** | Redis + BullMQ, wachtrij met pauzeren/hervatten, Shopify Bulk Operations, voorraad- en prijssynchronisatie met goedgekeurde regels, statusterugkoppeling | Gepland |
 | **7 — Testen en afwerken** | Playwright-E2E in ontwikkelwinkel, rate limiting, belasting- en beveiligingstest, toegankelijkheid | Gepland |
@@ -24,5 +24,5 @@
 | AI-functies met geldige sleutel | ⏳ Fase 5 (sleutelopslag en verbindingstest gereed) |
 | Fouten duidelijk zichtbaar | ✅ per regel, per product en in het logboek |
 | Geen publicatie zonder goedkeuring | ✅ altijd DRAFT, geen publicatiefunctie |
-| Tests slagen | ✅ 93/93 |
+| Tests slagen | ✅ 116/116 |
 | Installatiehandleiding volledig | ✅ |

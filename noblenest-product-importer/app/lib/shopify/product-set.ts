@@ -8,6 +8,9 @@
  *   daarom wordt productSet nooit op een bestaand product uitgevoerd. Updates van bestaande
  *   producten lopen in een latere fase via gerichte mutaties (productVariantsBulkUpdate).
  * - Afbeeldingen worden alleen meegestuurd als de rechten bevestigd zijn.
+ * - Alle afbeeldingen staan in `files` (volgorde = volgorde in Shopify, eerste = hoofdfoto).
+ *   Een variantafbeelding verwijst naar dezelfde bron; Shopify maakt daar geen dubbele media van
+ *   (zie het voorbeeld "Create a product and associate files" in de productSet-documentatie).
  *
  * Documentatie: https://shopify.dev/docs/api/admin-graphql/2026-10/mutations/productSet
  */
@@ -68,8 +71,24 @@ export interface BuildOptions {
   merchantConfirmedImageRights: boolean;
   defaultVendor?: string | null;
   extraTags?: string[];
-  /** AI-teksten gebruiken in plaats van bronteksten (alleen als ze bestaan) */
-  overrides?: { title?: string | null; descriptionHtml?: string | null; seoTitle?: string | null; seoDescription?: string | null };
+  /** Aanpassingen van de winkelier of AI-teksten (alleen gebruikt als ze bestaan) */
+  overrides?: ProductOverrides;
+}
+
+export interface ProductOverrides {
+  title?: string | null;
+  descriptionHtml?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  productType?: string | null;
+  vendor?: string | null;
+  tags?: string[] | null;
+  /** Geselecteerde afbeeldingen in volgorde (eerste = hoofdfoto); undefined = alle toegestane */
+  images?: string[] | null;
+  /** Afbeelding per variant (externe variant-ID → URL of null) */
+  variantImages?: Record<string, string | null> | null;
+  /** Shopify-collectie-ID's (handmatige collecties) */
+  collections?: string[] | null;
 }
 
 export interface ProductSetInput {
@@ -98,6 +117,7 @@ export interface ProductSetInput {
     file?: { originalSource: string; contentType: "IMAGE"; alt?: string };
   }[];
   files?: { originalSource: string; contentType: "IMAGE"; alt?: string }[];
+  collections?: string[];
   metafields: { namespace: string; key: string; type: string; value: string }[];
 }
 
@@ -112,9 +132,19 @@ export function imagesAllowed(product: NormalizedProduct, merchantConfirmed: boo
   );
 }
 
+/** Definitieve afbeeldingen: toegestaan (beeldrechten) én geselecteerd, in de gekozen volgorde. */
+export function finalImages(product: NormalizedProduct, merchantConfirmed: boolean, overrides?: ProductOverrides) {
+  const allowed = imagesAllowed(product, merchantConfirmed);
+  if (!overrides?.images) return allowed;
+  const byUrl = new Map(allowed.map((img) => [img.url, img]));
+  return [...new Set(overrides.images)].map((url) => byUrl.get(url)).filter((img): img is NonNullable<typeof img> => !!img);
+}
+
 export function buildProductSetInput(product: NormalizedProduct, options: BuildOptions): ProductSetInput {
-  const allowedImages = imagesAllowed(product, options.merchantConfirmedImageRights);
-  const allowedUrls = new Set(allowedImages.map((i) => i.url));
+  const ov = options.overrides ?? {};
+  const images = finalImages(product, options.merchantConfirmedImageRights, ov);
+  const imageUrls = new Set(images.map((i) => i.url));
+  const title = ov.title?.trim() || product.title;
 
   const hasOptions = product.options.length > 0;
   const productOptions = hasOptions
@@ -151,16 +181,17 @@ export function buildProductSetInput(product: NormalizedProduct, options: BuildO
     };
     if (variant.sku) out.sku = variant.sku;
     if (variant.barcode) out.barcodes = [{ value: variant.barcode }];
-    if (variant.imageUrl && allowedUrls.has(variant.imageUrl)) {
-      out.file = { originalSource: variant.imageUrl, contentType: "IMAGE", alt: product.title };
+    const variantImage = ov.variantImages && variant.externalId in ov.variantImages ? ov.variantImages[variant.externalId] : variant.imageUrl;
+    if (variantImage && imageUrls.has(variantImage)) {
+      out.file = { originalSource: variantImage, contentType: "IMAGE", alt: title };
     }
     return out;
   });
 
-  const title = options.overrides?.title?.trim() || product.title;
-  const descriptionHtml = options.overrides?.descriptionHtml?.trim() || product.descriptionHtml;
-  const vendor = product.vendor ?? product.brand ?? options.defaultVendor ?? undefined;
-  const tags = [...new Set([...product.tags, ...(options.extraTags ?? [])])];
+  const descriptionHtml = ov.descriptionHtml?.trim() || product.descriptionHtml;
+  const vendor = ov.vendor?.trim() || product.vendor || product.brand || options.defaultVendor || undefined;
+  const productType = ov.productType?.trim() || product.productType;
+  const tags = [...new Set([...(ov.tags ?? product.tags), ...(options.extraTags ?? [])])];
 
   const input: ProductSetInput = {
     title,
@@ -171,15 +202,14 @@ export function buildProductSetInput(product: NormalizedProduct, options: BuildO
   };
   if (descriptionHtml) input.descriptionHtml = descriptionHtml;
   if (vendor) input.vendor = vendor;
-  if (product.productType) input.productType = product.productType;
+  if (productType) input.productType = productType;
   if (tags.length) input.tags = tags;
-  const variantFileUrls = new Set(variants.map((v) => v.file?.originalSource).filter(Boolean));
-  const files = allowedImages
-    .filter((img) => !variantFileUrls.has(img.url))
-    .map((img) => ({ originalSource: img.url, contentType: "IMAGE" as const, ...(img.alt ? { alt: img.alt } : {}) }));
+  const files = images.map((img) => ({ originalSource: img.url, contentType: "IMAGE" as const, alt: img.alt ?? title }));
   if (files.length) input.files = files;
-  const seoTitle = options.overrides?.seoTitle?.trim();
-  const seoDescription = options.overrides?.seoDescription?.trim();
+  const collections = [...new Set(ov.collections ?? [])].filter((id) => /^gid:\/\/shopify\/Collection\/\d+$/.test(id));
+  if (collections.length) input.collections = collections;
+  const seoTitle = ov.seoTitle?.trim();
+  const seoDescription = ov.seoDescription?.trim();
   if (seoTitle || seoDescription) {
     input.seo = { ...(seoTitle ? { title: seoTitle } : {}), ...(seoDescription ? { description: seoDescription } : {}) };
   }

@@ -8,6 +8,7 @@ import { requireShop } from "../services/shop.server";
 import { cancelImport, getJob, processJob, retryFailed, setSelection, startImport, type ItemFlags } from "../services/import.server";
 import type { ProductPricing } from "../services/pricing.server";
 import type { NormalizedProduct, RowError } from "../lib/import/types";
+import type { ItemOverrides } from "../lib/import/overrides";
 import { formatDateTime, formatMoney, formatPercent, formatPriceRange, ITEM_STATUS, JOB_STATUS, SEVERITY_TONE, STOCK_STATUS } from "../lib/format";
 import { useElementEvent } from "../hooks/use-element-event";
 
@@ -35,6 +36,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     },
     items: job.items.map((item) => {
       const product = item.payload as unknown as NormalizedProduct;
+      const overrides = (item.overrides ?? {}) as ItemOverrides;
+      const manualPrices = ((item.pricing as { manualVariants?: string[] } | null)?.manualVariants ?? []).length;
       const flags = item.flags as unknown as ItemFlags;
       const pricing = item.pricing as unknown as ProductPricing | null;
       const firstCalc = pricing ? Object.values(pricing.variants).find((c) => c.ok) : undefined;
@@ -42,7 +45,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       return {
         id: item.id,
         externalId: item.externalId,
-        title: item.title,
+        title: overrides.title ?? item.title,
+        edited: Object.keys(overrides).length > 0 || manualPrices > 0,
         status: item.status,
         selected: item.selected,
         attempts: item.attempts,
@@ -53,7 +57,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
         variantCount: product.variants.length,
         optionSummary: product.options.map((o) => `${o.name} (${o.values.length})`).join(", "),
         imageCount: product.images.length,
-        firstImage: product.images[0]?.url ?? null,
+        firstImage: overrides.images ? overrides.images[0] ?? null : product.images[0]?.url ?? null,
         imagesNeedConsent: product.images.some((i) => i.rights === "UNVERIFIED"),
         stockStatus: product.stockStatus,
         sourceCurrency: product.currencyCode,
@@ -283,9 +287,12 @@ export default function ImportJobPage() {
                   <s-stack direction="inline" gap="small-200" alignItems="center">
                     <s-thumbnail src={item.firstImage ?? undefined} alt={item.title} size="small" />
                     <s-stack direction="block" gap="none">
-                      <s-text type="strong">{item.title}</s-text>
+                      <s-stack direction="inline" gap="small-200" alignItems="center">
+                        <s-text type="strong">{item.title}</s-text>
+                        {item.edited ? <s-badge tone="info">Bewerkt</s-badge> : null}
+                      </s-stack>
                       <s-text color="subdued">
-                        {item.externalId} · {item.imageCount} foto{item.imageCount === 1 ? "" : "'s"}
+                        {item.externalId} · {item.imageCount} foto{item.imageCount === 1 ? "" : "’s"}
                       </s-text>
                     </s-stack>
                   </s-stack>
@@ -311,6 +318,9 @@ export default function ImportJobPage() {
                       <s-link href={productAdminUrl(item.shopifyProductId)} target="_blank">
                         Openen in Shopify
                       </s-link>
+                    ) : null}
+                    {isPreview && item.status === "PENDING" && !item.blocking ? (
+                      <s-link href={`/app/import/${job.id}/item/${item.id}`}>Bewerken</s-link>
                     ) : null}
                   </s-stack>
                 </s-table-cell>

@@ -59,6 +59,7 @@ export type PricingIssueCode =
   | "SHIPPING_COST_MISSING"
   | "VAT_NOT_CONFIGURED"
   | "TARGET_MARGIN_UNREACHABLE"
+  | "NEGATIVE_MARGIN"
   | "INVALID_RULE";
 
 export interface PricingIssue {
@@ -138,10 +139,20 @@ export function applyRounding(price: Decimal, rounding: PriceRounding): Decimal 
   return candidate;
 }
 
+export interface CalculateOptions {
+  /**
+   * Handmatige verkoopprijs van de winkelier (zoals in Shopify, incl./excl. btw volgens de regel).
+   * Kostprijs, btw, transactiekosten, winst en marge worden dan vanaf deze prijs berekend;
+   * strategie, minimumprijs en afronding worden niet toegepast.
+   */
+  fixedSellingPrice?: Numeric | null;
+}
+
 export function calculatePrice(
   product: PricingProductInput,
   rule: PricingRuleInput,
   context: PricingContext,
+  options: CalculateOptions = {},
 ): PriceCalculation {
   const issues: PricingIssue[] = [];
   const shopCurrency = context.shopCurrency.toUpperCase();
@@ -220,8 +231,16 @@ export function calculatePrice(
   const platformPct = pct(rule.platformFeePercent);
   const vatFactor = new Decimal(1).plus(vat);
 
+  const fixed = options.fixedSellingPrice === undefined || options.fixedSellingPrice === null ? null : dec(options.fixedSellingPrice);
+  if (options.fixedSellingPrice !== undefined && options.fixedSellingPrice !== null && (!fixed || fixed.lte(0))) {
+    issues.push({ code: "INVALID_RULE", severity: "error", message: "De handmatige verkoopprijs is ongeldig." });
+    return { ok: false, breakdown: null, issues };
+  }
+
   let net: Decimal;
-  switch (rule.strategy) {
+  if (fixed) {
+    net = rule.pricesIncludeVat ? fixed.div(vatFactor) : fixed;
+  } else switch (rule.strategy) {
     case "FIXED_MARKUP":
       net = landed.plus(ruleValue);
       break;
@@ -249,9 +268,13 @@ export function calculatePrice(
 
   // Prijs die in Shopify komt: incl. of excl. btw.
   let shopPrice = rule.pricesIncludeVat ? net.mul(vatFactor) : net;
-  const minimum = dec(rule.minimumPrice);
-  if (minimum && shopPrice.lt(minimum)) shopPrice = minimum;
-  shopPrice = applyRounding(shopPrice, rule.rounding);
+  if (fixed) {
+    shopPrice = fixed.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  } else {
+    const minimum = dec(rule.minimumPrice);
+    if (minimum && shopPrice.lt(minimum)) shopPrice = minimum;
+    shopPrice = applyRounding(shopPrice, rule.rounding);
+  }
 
   // Terugrekenen vanaf de definitieve (afgeronde) prijs.
   const finalNet = rule.pricesIncludeVat ? shopPrice.div(vatFactor) : shopPrice;
@@ -261,6 +284,13 @@ export function calculatePrice(
   const platformFees = finalGross.mul(platformPct);
   const profit = finalNet.minus(landed).minus(paymentFees).minus(platformFees);
   const marginPct = finalNet.isZero() ? ZERO : profit.div(finalNet).mul(HUNDRED);
+  if (profit.isNegative()) {
+    issues.push({
+      code: "NEGATIVE_MARGIN",
+      severity: "warning",
+      message: `Verlies: de verkoopprijs dekt de kosten niet (${profit.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2)} ${shopCurrency} per stuk).`,
+    });
+  }
 
   return {
     ok: true,

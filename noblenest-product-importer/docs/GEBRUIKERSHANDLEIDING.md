@@ -12,7 +12,7 @@ Noblenest haalt productgegevens van leveranciers binnen, controleert ze, bereken
 | **Producten zoeken** | Catalogus van een gekoppelde feed doorzoeken, filteren, vergelijken en selecteren |
 | **Importeren** | CSV, XML- of JSON-bestand uploaden, voorbeeld controleren, importeren, importgeschiedenis |
 | **Bulkimport** | *(fase 6)* grote catalogi via een achtergrondwachtrij |
-| **Mijn producten** | Alle geïmporteerde producten met leverancier, inkoop- en verkoopprijs |
+| **Mijn producten** | Alle geïmporteerde producten met leverancier, inkoop- en verkoopprijs; overzicht van mogelijke duplicaten |
 | **AI Studio** | *(fase 5)* Nederlandse titels, beschrijvingen en SEO |
 | **Prijsregels** | Bepalen hoe verkoopprijzen worden berekend, met rekenvoorbeeld |
 | **Leveranciers** | Feedbronnen koppelen en controleren; welke koppelingen beschikbaar zijn |
@@ -49,7 +49,29 @@ Gebruik het **rekenvoorbeeld** rechts om een regel te controleren voordat je imp
 5. Klik **… product(en) als concept importeren**. Dit is je akkoord.
 6. Bij meer dan 25 producten verschijnt **Doorgaan** voor de volgende reeks. Mislukte producten kun je **opnieuw proberen** (max. 3 pogingen); een import die nog loopt kun je **annuleren**.
 
-## 2b. Leveranciersfeeds koppelen en doorzoeken
+## 2a. Product importeren via URL
+
+Plak een link in **Product importeren via URL** (bovenaan Importeren):
+- staat het product in een van je **gekoppelde feeds**, dan krijg je direct een voorbeeld van dat product;
+- is het een **directe feed-URL** (.xml of .json), dan wordt de feed eenmalig veilig ingelezen;
+- bij **AliExpress, Alibaba of Temu** legt Noblenest uit welke officiële koppeling nodig is;
+- bij andere webpagina's haalt Noblenest niets op (geen scraping) en krijg je de alternatieven te zien.
+
+## 2b. Handmatig invoeren
+
+**Importeren → Product handmatig invoeren**: titel, inkoopprijs (verplicht), levertijd, voorraad, foto's, veiligheidsinformatie en eventueel één optie met varianten (bv. Kleur: Zwart, Goud). Met een SKU herkent Noblenest het als je hetzelfde product nog eens invoert.
+
+## 2c. Producten bewerken vóór import
+
+Klik in het importvoorbeeld op **Bewerken** bij een product:
+- **Teksten**: titel, beschrijving, producttype, merk, tags, SEO-titel (max. 70) en metabeschrijving (max. 320).
+- **Prijzen**: vul een *eigen verkoopprijs* in per variant. Noblenest rekent kostprijs, btw, winst en marge door en waarschuwt bij verlies. Leeg laten = automatische prijs.
+- **Afbeeldingen**: kies welke foto's je gebruikt, verander de volgorde en kies de hoofdfoto. Te kleine foto's (< 800 px) en mogelijke dubbele foto's worden gemarkeerd.
+- **Foto per variant** en **collecties** (handmatige collecties uit je winkel).
+
+De oorspronkelijke gegevens van de leverancier blijven altijd apart bewaard; in het voorbeeld zie je het label **Bewerkt**.
+
+## 2d. Leveranciersfeeds koppelen en doorzoeken
 
 1. **Leveranciers → Feedbron toevoegen**: naam, formaat (XML/Google of JSON), feed-URL (https), optioneel bronlabel, en of de leverancier gebruik van afbeeldingen toestaat. Noblenest slaat de URL versleuteld op en controleert direct of de feed werkt.
 2. **Controleren** toont of de feed bereikbaar is en hoeveel producten erin staan; fouten staan bij de bron en in het logboek.

@@ -74,11 +74,10 @@ export const SUPPLIER_REGISTRY: SupplierDefinition[] = [
     key: "manual",
     name: "Handmatige invoer",
     type: "MANUAL",
-    integrationStatus: "PLANNED",
+    integrationStatus: "AVAILABLE",
     website: null,
     description: "Productgegevens zelf invoeren, met dezelfde prijs-, kwaliteits- en duplicaatcontroles als bij andere imports.",
-    capabilities: NONE,
-    plannedPhase: 4,
+    capabilities: { ...NONE, products: true, variants: true, prices: true, stock: true, images: true, shipping: true },
   },
   {
     key: "aliexpress",

@@ -10,7 +10,7 @@
 | Taal | Nederlands |
 | Stack | TypeScript · React Router 7 · Polaris web components · App Bridge · Shopify Admin GraphQL API 2026-10 · PostgreSQL · Prisma · Zod · Vitest |
 
-## Wat werkt nu (fase 1, 2 en 3)
+## Wat werkt nu (fase 1 t/m 4)
 
 - **Shopify-koppeling** via de officiële authenticatie (session tokens / token exchange), sessies in PostgreSQL.
 - **Dashboard** met geïmporteerde producten, concepten, producten zonder afbeelding, mislukte imports en recente imports.
@@ -22,6 +22,10 @@
 - **Betrouwbare verwerking**: atomair claimen per product (geen dubbele verwerking), batches van 25, pauzeren/doorgaan, annuleren, opnieuw proberen (max. 3 pogingen), herstel na netwerkfouten.
 - **Feedbronnen**: feed-URL's van leveranciers koppelen (URL versleuteld opgeslagen), verbinding controleren, alles of een selectie importeren. Ophalen met SSRF-bescherming (IP-controle bij elke verbinding, ook na redirects), grootte- en tijdslimieten.
 - **Producten zoeken**: catalogus van een feed doorzoeken en filteren (tekst, max. inkoopprijs, voorraad), producten vergelijken en doorzetten naar het importvoorbeeld.
+- **Product importeren via URL**: grote invoerbalk; links naar producten in je gekoppelde feeds en directe feed-URL's (.xml/.json) worden ingelezen; AliExpress-, Alibaba- en Temu-links krijgen uitleg over de officiële koppeling; losse webpagina's worden nooit opgehaald (geen scraping).
+- **Handmatige invoer** met varianten, foto's en beeldrechtenbevestiging — met dezelfde prijs- en kwaliteitscontroles.
+- **Bewerken in het voorbeeld**: titel, beschrijving (HTML gefilterd), producttype, merk, tags, SEO-titel en -beschrijving, **eigen verkoopprijs per variant** (met kostprijs, winst, marge en verlieswaarschuwing), **foto's** (selectie, volgorde, hoofdfoto, foto per variant, afmetingencontrole, mogelijke dubbele foto's) en **Shopify-collecties**. De oorspronkelijke leveranciersgegevens blijven apart bewaard.
+- **Mogelijke duplicaten** in Mijn producten: zelfde EAN/GTIN, bron-URL of titel, ook tussen leveranciers (alleen signaleren, nooit automatisch verwijderen).
 - **Mijn producten**, **Leveranciers** (eerlijke integratiestatus), **Instellingen** (AI-sleutels versleuteld met AES-256-GCM, importvoorkeuren, wisselkoersen), **Logboeken**.
 - **Beveiliging**: HMAC-gevalideerde webhooks incl. AVG-compliancewebhooks, autorisatie per winkel, Zod-validatie, uploadcontrole, SSRF-bescherming, HTML-sanering, minimale scope (`write_products`).
 

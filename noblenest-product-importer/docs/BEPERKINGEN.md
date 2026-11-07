@@ -1,10 +1,12 @@
-# Bekende beperkingen (versie 0.3 — fase 1 t/m 3)
+# Bekende beperkingen (versie 0.4 — fase 1 t/m 4)
 
 ## Functioneel
 
 | Beperking | Toelichting | Gepland |
 |---|---|---|
-| Import via losse productlink en handmatige invoer | Nog niet gebouwd (CSV, XML- en JSON-feeds werken wel). | Fase 4 |
+| Productlinks van willekeurige webshops | Worden bewust niet uitgelezen (geen scraping). Een link werkt alleen als het product in een gekoppelde feed staat of als het een directe feed-URL is. | — |
+| Handmatige invoer | Eén optie (bv. Kleur) met dezelfde inkoopprijs per variant; complexere varianten via CSV/JSON. | Later |
+| Afmetingen van foto's | Worden in de browser gemeten; als de leverancier hotlinking blokkeert, toont Noblenest "Niet te laden". | — |
 | Geen API-koppelingen met marktplaatsen | AliExpress en Alibaba vereisen goedgekeurde API-toegang (App Key/Secret). Temu biedt — voor zover bekend — geen openbare API. Shopify Collective werkt alleen via de Collective-app. Leveranciers met een productfeed (XML/JSON) kun je wél koppelen. | Zodra toegang beschikbaar is |
 | Andere XML-formaten | Alleen het Google Merchant Center-formaat (RSS/Atom) wordt herkend; andere XML-structuren eerst laten omzetten of als CSV/JSON aanleveren. | Op aanvraag |
 | Feeds automatisch verversen | Een feedbron wordt opgehaald als jij controleert, zoekt of importeert; periodiek ophalen volgt met synchronisatie. | Fase 6 |
@@ -12,7 +14,7 @@
 | Geen synchronisatie | Voorraad en prijzen worden na de import niet automatisch bijgewerkt. Voorraad wordt in Shopify (nog) niet gevolgd (`tracked: false`). | Fase 6 |
 | Status in "Mijn producten" | Toont de status bij import; als je in Shopify publiceert, wordt dat nog niet teruggelezen. | Fase 6 |
 | AI-teksten | Alleen opslag en test van API-sleutels; generatie volgt. | Fase 5 |
-| Collecties | Producten worden nog niet automatisch aan collecties toegevoegd. | Fase 4 |
+| Collecties | Alleen handmatige collecties zijn kiesbaar (slimme collecties vullen zichzelf via regels); keuze per product in het voorbeeld. | — |
 | Varianten | Maximaal 3 opties en 2.048 varianten per product (Shopify-limiet); in het antwoord worden maximaal 250 variant-ID's gekoppeld. | — |
 | Rate limiting | Nog geen limiet per winkel op uploads/acties (wel uploadgrootte- en regellimieten). | Fase 7 |
 | Taal | Alleen Nederlands. | Later |

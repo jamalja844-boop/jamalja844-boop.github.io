@@ -19,11 +19,12 @@ import { detectDuplicates } from "../lib/import/duplicates";
 import { normalizedProductSchema, sourceKeyFor, type NormalizedProduct, type ParseResult } from "../lib/import/types";
 import {
   buildProductSetInput,
-  imagesAllowed,
+  finalImages,
   PRODUCT_BY_SOURCE_ID_QUERY,
   PRODUCT_SET_CREATE_MUTATION,
   SOURCE_ID_KEY,
   SOURCE_ID_NAMESPACE,
+  type ProductOverrides,
   type VariantPricing,
 } from "../lib/shopify/product-set";
 import { logAudit } from "./audit.server";
@@ -83,6 +84,8 @@ export interface CreateSourcePreviewInput {
   imageRightsFromSupplier?: boolean;
   /** Alleen deze externe ID's opnemen (selectie vanuit Producten zoeken). */
   onlyExternalIds?: string[];
+  /** Type importtaak (standaard gelijk aan het formaat), bv. MANUAL of URL */
+  jobType?: "CSV" | "XML" | "JSON" | "URL" | "URL_BATCH" | "MANUAL";
   maxRows?: number;
   fetchImpl?: typeof fetch;
 }
@@ -159,7 +162,7 @@ export async function createPreview(input: CreateSourcePreviewInput) {
     data: {
       shopId: input.shop.id,
       createdById: input.userId,
-      type: input.format,
+      type: input.jobType ?? input.format,
       status: "PREVIEW",
       sourceName: input.sourceName.slice(0, 255),
       supplierKey: supplier.key,
@@ -453,13 +456,22 @@ async function processItem(job: ImportJob, itemId: string, client: AdminGraphqlC
   }
   const found = lookup.data?.productByIdentifier;
   if (found) {
-    await recordSuccess(job, item.id, supplierProduct.id, key, found, [], variantPricing, product, userId, true);
+    await recordSuccess(job, item.id, supplierProduct.id, key, found, [], variantPricing, product, userId, true, (item.overrides ?? {}) as ProductOverrides);
     return;
   }
   // GraphQL-fouten bij het opzoeken (bv. metafield-definitie nog niet uitgerold) blokkeren niet:
   // de unieke metafield-waarde voorkomt in Shopify alsnog een dubbel product.
 
   const prefs = await getSetting(job.shopId, "import.preferences");
+  // AI-teksten (fase 5) eerst, daarna de aanpassingen van de winkelier (die gaan altijd voor).
+  const merchantEdits = (item.overrides ?? {}) as ProductOverrides;
+  const overrides: ProductOverrides = {
+    title: supplierProduct.aiTitle,
+    descriptionHtml: supplierProduct.aiDescriptionHtml,
+    seoTitle: supplierProduct.seoTitle,
+    seoDescription: supplierProduct.seoDescription,
+    ...Object.fromEntries(Object.entries(merchantEdits).filter(([, v]) => v !== undefined && v !== null)),
+  };
   let input;
   try {
     input = buildProductSetInput(product, {
@@ -468,12 +480,7 @@ async function processItem(job: ImportJob, itemId: string, client: AdminGraphqlC
       merchantConfirmedImageRights: job.imageRightsConfirmed,
       defaultVendor: prefs.defaultVendor,
       extraTags: prefs.extraTags,
-      overrides: {
-        title: supplierProduct.aiTitle,
-        descriptionHtml: supplierProduct.aiDescriptionHtml,
-        seoTitle: supplierProduct.seoTitle,
-        seoDescription: supplierProduct.seoDescription,
-      },
+      overrides,
     });
   } catch (error) {
     await fail(error instanceof Error ? error.message : String(error));
@@ -493,7 +500,7 @@ async function processItem(job: ImportJob, itemId: string, client: AdminGraphqlC
     return;
   }
 
-  await recordSuccess(job, item.id, supplierProduct.id, key, payload.product, payload.product.variants.nodes, variantPricing, product, userId, false);
+  await recordSuccess(job, item.id, supplierProduct.id, key, payload.product, payload.product.variants.nodes, variantPricing, product, userId, false, overrides);
 }
 
 function translateUserErrors(errors: { field: string[] | null; message: string; code: string | null }[]): string {
@@ -586,9 +593,10 @@ async function recordSuccess(
   product: NormalizedProduct,
   userId: string | null,
   recovered: boolean,
+  overrides: ProductOverrides,
 ) {
   const prices = [...pricing.values()].map((p) => Number(p.price));
-  const allowedImages = new Set(imagesAllowed(product, job.imageRightsConfirmed).map((i) => i.url));
+  const allowedImages = new Set(finalImages(product, job.imageRightsConfirmed, overrides).map((i) => i.url));
 
   await db.$transaction(async (tx) => {
     await tx.shopifyProductMapping.create({

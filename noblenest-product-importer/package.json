@@ -1,7 +1,7 @@
 {
   "name": "noblenest-product-importer",
   "description": "Noblenest — productimportapp voor Shopify (CSV, leveranciers, AI-teksten, prijsberekening en synchronisatie).",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "build": "react-router build",

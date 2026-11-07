@@ -46,7 +46,7 @@ describe("buildProductSetInput", () => {
     expect(input.variants[0]!.optionValues).toEqual([{ optionName: "Title", name: "Default Title" }]);
   });
 
-  it("koppelt variantafbeeldingen aan varianten zonder ze dubbel te uploaden", () => {
+  it("zet alle foto's in volgorde in files en laat varianten naar dezelfde bron verwijzen", () => {
     const p = products.get("NN-1002")!;
     const input = buildProductSetInput(p, { sourceKey: "csv:NN-1002", pricing: pricingFor(p), merchantConfirmedImageRights: false });
     expect(input.variants.map((v) => v.file?.originalSource)).toEqual([
@@ -54,7 +54,53 @@ describe("buildProductSetInput", () => {
       "https://picsum.photos/id/1069/1200/1200",
       "https://picsum.photos/id/1070/1200/1200",
     ]);
-    expect(input.files!.map((f) => f.originalSource)).toEqual(["https://picsum.photos/id/1067/1200/1200"]);
+    // Zelfde bron in files + variant → Shopify maakt geen dubbele media (productSet-documentatie)
+    expect(input.files!.map((f) => f.originalSource)).toEqual([
+      "https://picsum.photos/id/1067/1200/1200",
+      "https://picsum.photos/id/1068/1200/1200",
+      "https://picsum.photos/id/1069/1200/1200",
+      "https://picsum.photos/id/1070/1200/1200",
+    ]);
+  });
+
+  it("past bewerkingen van de winkelier toe: teksten, type, merk, tags, collecties", () => {
+    const p = products.get("NN-1005")!;
+    const input = buildProductSetInput(p, {
+      sourceKey: "csv:NN-1005",
+      pricing: pricingFor(p),
+      merchantConfirmedImageRights: false,
+      extraTags: ["noblenest"],
+      overrides: {
+        title: "Carrara dienblad in wit marmer",
+        productType: "Serveren",
+        vendor: "Noblenest",
+        tags: ["Marmer"],
+        collections: ["gid://shopify/Collection/11", "gid://shopify/Collection/11", "fout"],
+      },
+    });
+    expect(input).toMatchObject({ title: "Carrara dienblad in wit marmer", productType: "Serveren", vendor: "Noblenest", tags: ["Marmer", "noblenest"] });
+    expect(input.collections).toEqual(["gid://shopify/Collection/11"]);
+    expect(input.status).toBe("DRAFT");
+  });
+
+  it("volgt de gekozen fotovolgorde (hoofdfoto eerst), sluit foto's uit en respecteert beeldrechten", () => {
+    const p = products.get("NN-1002")!;
+    const input = buildProductSetInput(p, {
+      sourceKey: "csv:NN-1002",
+      pricing: pricingFor(p),
+      merchantConfirmedImageRights: false,
+      overrides: {
+        images: ["https://picsum.photos/id/1069/1200/1200", "https://picsum.photos/id/1067/1200/1200", "https://niet-van-dit-product.nl/x.jpg"],
+        variantImages: { "NN-1002-SAL": null, "NN-1002-OKR": "https://picsum.photos/id/1067/1200/1200" },
+      },
+    });
+    expect(input.files!.map((f) => f.originalSource)).toEqual(["https://picsum.photos/id/1069/1200/1200", "https://picsum.photos/id/1067/1200/1200"]);
+    // SAL: bewust geen foto; OKR: andere foto; ANT: oorspronkelijke foto is uitgesloten → geen foto
+    expect(input.variants.map((v) => v.file?.originalSource ?? null)).toEqual([null, "https://picsum.photos/id/1067/1200/1200", null]);
+
+    const lamp = products.get("NN-1004")!; // beeldrechten niet bevestigd
+    const noRights = buildProductSetInput(lamp, { sourceKey: "x", pricing: pricingFor(lamp), merchantConfirmedImageRights: false, overrides: { images: [lamp.images[0]!.url] } });
+    expect(noRights.files).toBeUndefined();
   });
 
   it("stuurt geen afbeeldingen mee zonder bevestigde beeldrechten", () => {

@@ -51,6 +51,12 @@ Elke bron levert *records* (één per variant, canonieke veldnamen) aan `normali
 - **eigen DNS-lookup in de undici-dispatcher** die privé/gereserveerde adressen weigert bij elke verbinding (ook na redirects) — bescherming tegen DNS-rebinding;
 - handmatige redirects (max. 3, elk opnieuw gecontroleerd), maximale grootte (stream wordt afgebroken), time-out, toegestane content-types.
 
+## Bewerkingen vóór import
+
+`ImportJobItem.overrides` bevat de aanpassingen van de winkelier (gevalideerd met Zod; beschrijving gefilterd). Handmatige prijzen worden met dezelfde prijsregel doorgerekend (`calculatePrice` met `fixedSellingPrice`) en in `pricing` opgeslagen (de automatische prijzen blijven bewaard in `originalVariants`). Bij de import worden AI-teksten (fase 5) en daarna de bewerkingen van de winkelier toegepast; `payload` (leveranciersgegevens) wordt nooit gewijzigd.
+
+Afbeeldingen: alle gekozen foto's staan in `productSet.files` (volgorde = volgorde in Shopify); een variantfoto verwijst naar dezelfde bron, wat volgens de Shopify-documentatie geen dubbele media oplevert. Collecties gaan via `productSet.collections` (alleen handmatige collecties, opgehaald met `collections(query: "collection_type:custom")`).
+
 ## Importflow
 
 ```
