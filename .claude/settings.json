@@ -1,17 +1,24 @@
 {
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "shopify-ai-toolkit@claude-plugins-official": true,
+    "liquid-skills@liquid-skills": true
+  },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
       "source": {
         "source": "github",
         "repo": "anthropics/claude-plugins-official"
       }
+    },
+    "liquid-skills": {
+      "source": {
+        "source": "github",
+        "repo": "Shopify/liquid-skills"
+      }
     }
-  },
-  "enabledPlugins": {
-    "superpowers@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "github@claude-plugins-official": true,
-    "shopify-ai-toolkit@claude-plugins-official": true
   }
 }
