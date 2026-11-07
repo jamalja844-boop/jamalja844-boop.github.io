@@ -1,0 +1,194 @@
+import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
+import { useFetcher, useLoaderData } from "react-router";
+import { boundary } from "@shopify/shopify-app-react-router/server";
+import db from "../db.server";
+import { requireShop } from "../services/shop.server";
+import { createCsvPreview } from "../services/import.server";
+import { logAudit } from "../services/audit.server";
+import { checkCsvUpload, defaultUploadLimits } from "../lib/security/upload";
+import { formatDateTime, JOB_STATUS } from "../lib/format";
+import { useElementEvent } from "../hooks/use-element-event";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { shop } = await requireShop(request);
+  const [jobs, ruleCount] = await Promise.all([
+    db.importJob.findMany({ where: { shopId: shop.id }, orderBy: { createdAt: "desc" }, take: 25 }),
+    db.pricingRule.count({ where: { shopId: shop.id, isActive: true } }),
+  ]);
+  return {
+    hasPricingRule: ruleCount > 0,
+    maxMb: Math.round(defaultUploadLimits().maxBytes / 1024 / 1024),
+    jobs: jobs.map((j) => ({
+      id: j.id,
+      sourceName: j.sourceName,
+      status: j.status,
+      totalItems: j.totalItems,
+      succeededItems: j.succeededItems,
+      failedItems: j.failedItems,
+      skippedItems: j.skippedItems,
+      createdAt: j.createdAt.toISOString(),
+    })),
+  };
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { shop, user, redirect } = await requireShop(request);
+  const limits = defaultUploadLimits();
+
+  // Grote uploads weigeren voordat de body in het geheugen wordt gelezen.
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (contentLength > limits.maxBytes + 64 * 1024) {
+    return { error: `Het bestand is groter dan ${Math.round(limits.maxBytes / 1024 / 1024)} MB.` };
+  }
+
+  const form = await request.formData();
+  const file = form.get("file");
+  if (!(file instanceof File)) return { error: "Kies een CSV-bestand om te uploaden." };
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const check = checkCsvUpload({ name: file.name, size: file.size, type: file.type }, bytes, limits);
+  if (!check.ok) {
+    await logAudit({ shopId: shop.id, actorUserId: user?.id, level: "WARNING", action: "import.upload.rejected", message: `Upload geweigerd: ${check.error}` });
+    return { error: check.error };
+  }
+
+  try {
+    const { job } = await createCsvPreview({
+      shop,
+      userId: user?.id ?? null,
+      fileName: file.name,
+      text: check.text!,
+      supplierKey: "csv",
+    });
+    const target = `/app/import/${job.id}`;
+    return redirect ? redirect(target) : Response.redirect(target, 303);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Onbekende fout";
+    await logAudit({ shopId: shop.id, actorUserId: user?.id, level: "ERROR", action: "import.preview.failed", message: `Inlezen mislukt: ${message}` });
+    return { error: `Het bestand kon niet worden ingelezen: ${message}` };
+  }
+};
+
+export default function ImportPage() {
+  const { jobs, hasPricingRule, maxMb } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher<typeof action>();
+  const uploading = fetcher.state !== "idle";
+  const error = fetcher.data && "error" in fetcher.data ? fetcher.data.error : null;
+
+  const dropZoneRef = useElementEvent<HTMLElementTagNameMap["s-drop-zone"]>("change", (event) => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    const data = new FormData();
+    data.append("file", file, file.name);
+    fetcher.submit(data, { method: "post", encType: "multipart/form-data" });
+  });
+
+  return (
+    <s-page heading="Importeren" inlineSize="large">
+      {!hasPricingRule ? (
+        <s-banner tone="warning" heading="Nog geen prijsregel">
+          <s-paragraph>
+            Zonder actieve prijsregel kan Noblenest geen verkoopprijzen berekenen en kunnen producten niet worden geïmporteerd.{" "}
+            <s-link href="/app/pricing">Prijsregel instellen</s-link>
+          </s-paragraph>
+        </s-banner>
+      ) : null}
+
+      <s-section heading="Producten importeren uit een CSV-bestand">
+        <s-stack direction="block" gap="base">
+          <s-paragraph color="subdued">
+            Upload een CSV-export van je leverancier. Je krijgt eerst een voorbeeld met prijzen, varianten, foto’s en
+            controles. Pas na jouw akkoord worden de geselecteerde producten als concept in Shopify aangemaakt.
+          </s-paragraph>
+          <s-drop-zone
+            ref={dropZoneRef}
+            label="CSV-bestand"
+            accept=".csv,text/csv"
+            accessibilityLabel="Upload een CSV-bestand met producten"
+            disabled={uploading}
+            error={error ?? undefined}
+          >
+            <s-stack direction="block" gap="small-200" alignItems="center">
+              <s-text type="strong">{uploading ? "Bestand wordt ingelezen…" : "Sleep je CSV-bestand hierheen of klik om te kiezen"}</s-text>
+              <s-text color="subdued">Maximaal {maxMb} MB · komma, puntkomma of tab · UTF-8 of Excel</s-text>
+            </s-stack>
+          </s-drop-zone>
+          {uploading ? (
+            <s-stack direction="inline" gap="small-200" alignItems="center">
+              <s-spinner size="base" accessibilityLabel="Bezig met inlezen" />
+              <s-text>Producten, prijzen en controles worden voorbereid…</s-text>
+            </s-stack>
+          ) : null}
+        </s-stack>
+      </s-section>
+
+      <s-section heading="Product importeren via URL">
+        <s-paragraph color="subdued">
+          Importeren via een productlink wordt gebouwd in fase 4 en werkt alleen voor leveranciers met een officiële,
+          toegestane koppeling (zie Leveranciers). Tot die tijd importeer je via CSV.
+        </s-paragraph>
+      </s-section>
+
+      <s-section heading="Importgeschiedenis">
+        {jobs.length === 0 ? (
+          <s-paragraph color="subdued">Nog geen imports.</s-paragraph>
+        ) : (
+          <s-table>
+            <s-table-header-row>
+              <s-table-header listSlot="primary">Bestand</s-table-header>
+              <s-table-header>Status</s-table-header>
+              <s-table-header format="numeric">Producten</s-table-header>
+              <s-table-header format="numeric">Geïmporteerd</s-table-header>
+              <s-table-header format="numeric">Overgeslagen</s-table-header>
+              <s-table-header format="numeric">Mislukt</s-table-header>
+              <s-table-header>Datum</s-table-header>
+            </s-table-header-row>
+            <s-table-body>
+              {jobs.map((job) => (
+                <s-table-row key={job.id}>
+                  <s-table-cell>
+                    <s-link href={`/app/import/${job.id}`}>{job.sourceName}</s-link>
+                  </s-table-cell>
+                  <s-table-cell>
+                    <s-badge tone={JOB_STATUS[job.status]?.tone}>{JOB_STATUS[job.status]?.label ?? job.status}</s-badge>
+                  </s-table-cell>
+                  <s-table-cell>{job.totalItems}</s-table-cell>
+                  <s-table-cell>{job.succeededItems}</s-table-cell>
+                  <s-table-cell>{job.skippedItems}</s-table-cell>
+                  <s-table-cell>{job.failedItems}</s-table-cell>
+                  <s-table-cell>{formatDateTime(job.createdAt)}</s-table-cell>
+                </s-table-row>
+              ))}
+            </s-table-body>
+          </s-table>
+        )}
+      </s-section>
+
+      <s-section slot="aside" heading="Voorbeeldcatalogus">
+        <s-stack direction="block" gap="base">
+          <s-paragraph>
+            Test de importflow zonder leverancier met 6 voorbeeldproducten (varianten, USD-inkoop, ontbrekende foto en een
+            product zonder inkoopprijs).
+          </s-paragraph>
+          <a href="/voorbeeld/noblenest-voorbeeldcatalogus.csv" download="noblenest-voorbeeldcatalogus.csv">
+            Voorbeeld-CSV downloaden
+          </a>
+        </s-stack>
+      </s-section>
+
+      <s-section slot="aside" heading="CSV-kolommen">
+        <s-stack direction="block" gap="small-200">
+          <s-text type="strong">Verplicht</s-text>
+          <s-text>external_id, title</s-text>
+          <s-text type="strong">Aanbevolen</s-text>
+          <s-text>cost_price, currency, shipping_cost, description, image_urls, image_rights, stock_quantity, delivery_days_min/max, safety_info, eu_responsible_person</s-text>
+          <s-text type="strong">Varianten</s-text>
+          <s-text>Eén regel per variant met dezelfde external_id, plus option1_name / option1_value (max. 3 opties).</s-text>
+          <s-text color="subdued">Nederlandse kolomnamen (titel, inkoopprijs, voorraad …) worden ook herkend.</s-text>
+        </s-stack>
+      </s-section>
+    </s-page>
+  );
+}
+
+export const headers: HeadersFunction = (headersArgs) => boundary.headers(headersArgs);

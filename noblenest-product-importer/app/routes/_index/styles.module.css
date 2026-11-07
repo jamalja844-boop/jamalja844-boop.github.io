@@ -1,0 +1,177 @@
+/* Noblenest — landingspagina buiten de Shopify-admin. Systeemlettertypen (geen externe fonts, AVG-vriendelijk). */
+
+.page {
+  --nn-ink: #16181d;
+  --nn-ink-soft: #4a4d55;
+  --nn-ivory: #f7f4ee;
+  --nn-line: #e4ded3;
+  --nn-gold: #a7834e;
+  --nn-gold-deep: #8a6a3b;
+
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  background: radial-gradient(120% 80% at 50% 0%, #fffdf9 0%, var(--nn-ivory) 60%, #efe9de 100%);
+  color: var(--nn-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.inner {
+  width: 100%;
+  max-width: 44rem;
+  text-align: center;
+  display: grid;
+  gap: 1.5rem;
+  animation: rise 600ms ease-out both;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--nn-gold-deep);
+}
+
+.wordmark {
+  margin: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(3rem, 9vw, 5.5rem);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.tagline {
+  margin: 0 auto;
+  max-width: 34rem;
+  font-size: 1.075rem;
+  line-height: 1.65;
+  color: var(--nn-ink-soft);
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 1rem auto 0;
+}
+
+.label {
+  display: grid;
+  gap: 0.35rem;
+  text-align: left;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--nn-ink-soft);
+}
+
+.input {
+  width: min(20rem, 80vw);
+  padding: 0.8rem 1rem;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--nn-ink);
+  background: #fffdf9;
+  border: 1px solid var(--nn-line);
+  border-radius: 0.6rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--nn-gold);
+  box-shadow: 0 0 0 3px rgb(167 131 78 / 0.18);
+}
+
+.button {
+  padding: 0.85rem 1.6rem;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fffdf9;
+  background: var(--nn-ink);
+  border: 0;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.button:hover {
+  background: #2a2d34;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button:focus-visible {
+  outline: 3px solid rgb(167 131 78 / 0.5);
+  outline-offset: 2px;
+}
+
+.features {
+  list-style: none;
+  margin: 2.5rem 0 0;
+  padding: 2rem 0 0;
+  border-top: 1px solid var(--nn-line);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.75rem;
+  text-align: left;
+}
+
+.features li {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+}
+
+.features strong {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.features span {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--nn-ink-soft);
+}
+
+@media (max-width: 48rem) {
+  .features {
+    grid-template-columns: 1fr;
+  }
+
+  .form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .input,
+  .button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inner {
+    animation: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

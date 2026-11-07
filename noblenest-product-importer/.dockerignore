@@ -1,0 +1,10 @@
+.cache
+build
+node_modules
+.env
+.env.*
+!.env.example
+coverage
+test-results
+playwright-report
+.react-router

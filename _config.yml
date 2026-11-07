@@ -1,0 +1,3 @@
+# GitHub Pages (Jekyll): appbroncode niet als website publiceren.
+exclude:
+  - noblenest-product-importer

@@ -1,0 +1,50 @@
+# Noblenest — Shopify-appconfiguratie
+# Koppel deze configuratie aan je app in het Shopify Dev Dashboard met:
+#   npm run config:link
+# Daarna vult de Shopify CLI client_id, application_url en redirect-URL's automatisch in.
+
+name = "Noblenest"
+handle = "noblenest-product-importer"
+client_id = ""
+application_url = "https://example.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[access_scopes]
+# Minimaal benodigde rechten. write_products omvat het lezen van producten.
+# Voorraad- en collectierechten worden pas toegevoegd wanneer die functies (fase 6) actief worden.
+scopes = "write_products"
+
+[auth]
+redirect_urls = ["https://example.com/api/auth"]
+
+[webhooks]
+api_version = "2026-10"
+
+  # Afgehandeld door: /app/routes/webhooks.app.uninstalled.tsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = ["app/uninstalled"]
+
+  # Afgehandeld door: /app/routes/webhooks.app.scopes_update.tsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = ["app/scopes_update"]
+
+  # AVG/GDPR-compliancewebhooks (verplicht voor openbare apps, hier altijd geïmplementeerd)
+  # Afgehandeld door: /app/routes/webhooks.compliance.tsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/compliance"
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+
+# App-eigen metafield met de unieke bron-ID van elk geïmporteerd product
+# (formaat: "<leverancier>:<externe-id>"). Het type "id" heeft automatisch unieke waarden,
+# zodat Shopify zelf dubbele imports blokkeert en Noblenest na een netwerkfout kan
+# controleren of een product al bestaat (productByIdentifier).
+[product.metafields.app.source_id]
+name = "Noblenest bron-ID"
+description = "Unieke bron-ID van het leveranciersproduct. Wordt gebruikt om dubbele imports te voorkomen."
+type = "id"
+access.admin = "merchant_read"

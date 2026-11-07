@@ -1,0 +1,42 @@
+# Noblenest — lokale ontwikkelomgeving
+# Start: docker compose up -d
+# Database: postgresql://noblenest:noblenest_dev@localhost:5432/noblenest
+# Redis:    redis://localhost:6379 (achtergrondtaken, fase 6)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: noblenest-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: noblenest
+      POSTGRES_PASSWORD: noblenest_dev
+      POSTGRES_DB: noblenest
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - noblenest_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U noblenest -d noblenest"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: noblenest-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - noblenest_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  noblenest_pgdata:
+  noblenest_redisdata:
