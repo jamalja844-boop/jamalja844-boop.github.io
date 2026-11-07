@@ -1,4 +1,4 @@
-/** Validatie van geüploade importbestanden. */
+/** Validatie van geüploade importbestanden (CSV, XML, JSON). */
 
 export interface UploadLimits {
   maxBytes: number;
@@ -11,8 +11,11 @@ export interface UploadCheck {
   encoding?: "utf-8" | "windows-1252";
 }
 
-const ALLOWED_EXTENSIONS = [".csv", ".txt"];
-const ALLOWED_MIME = new Set(["", "text/csv", "text/plain", "application/csv", "application/vnd.ms-excel", "text/x-csv"]);
+const ALLOWED_EXTENSIONS = [".csv", ".txt", ".xml", ".rss", ".json"];
+const ALLOWED_MIME = new Set([
+  "", "text/csv", "text/plain", "application/csv", "application/vnd.ms-excel", "text/x-csv",
+  "application/xml", "text/xml", "application/rss+xml", "application/atom+xml", "application/json",
+]);
 
 export function defaultUploadLimits(): UploadLimits {
   const mb = Number(process.env.NOBLENEST_MAX_UPLOAD_MB ?? 5);
@@ -23,14 +26,14 @@ export function defaultUploadLimits(): UploadLimits {
  * Controleert naam, type, grootte en inhoud. Decodeert UTF-8; valt terug op Windows-1252
  * (veelgebruikt door Excel in Nederland). Binaire bestanden worden geweigerd.
  */
-export function checkCsvUpload(
+export function checkImportUpload(
   file: { name: string; size: number; type: string },
   bytes: Uint8Array,
   limits: UploadLimits = defaultUploadLimits(),
 ): UploadCheck {
   const name = file.name.toLowerCase();
   if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-    return { ok: false, error: "Alleen .csv-bestanden zijn toegestaan." };
+    return { ok: false, error: "Alleen .csv-, .xml- en .json-bestanden zijn toegestaan." };
   }
   if (!ALLOWED_MIME.has(file.type)) {
     return { ok: false, error: `Bestandstype "${file.type}" wordt niet ondersteund.` };
@@ -39,7 +42,7 @@ export function checkCsvUpload(
   if (file.size > limits.maxBytes || bytes.length > limits.maxBytes) {
     return { ok: false, error: `Het bestand is groter dan ${Math.round(limits.maxBytes / 1024 / 1024)} MB.` };
   }
-  if (bytes.includes(0)) return { ok: false, error: "Het bestand lijkt binair en is geen geldig CSV-bestand." };
+  if (bytes.includes(0)) return { ok: false, error: "Het bestand lijkt binair en is geen geldig importbestand." };
 
   try {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -49,3 +52,6 @@ export function checkCsvUpload(
     return { ok: true, text, encoding: "windows-1252" };
   }
 }
+
+/** @deprecated gebruik checkImportUpload */
+export const checkCsvUpload = checkImportUpload;

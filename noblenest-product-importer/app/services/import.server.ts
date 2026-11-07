@@ -14,9 +14,9 @@
 import type { ImportItemStatus, ImportJob, Prisma } from "@prisma/client";
 import db from "../db.server";
 import { checkProduct, hasBlockingFlag, type ProductFlag } from "../lib/import/compliance";
-import { parseProductCsv } from "../lib/import/csv";
+import { parseSource, SUPPLIER_KEY_FOR_FORMAT, type SourceFormat } from "../lib/import/sources";
 import { detectDuplicates } from "../lib/import/duplicates";
-import { normalizedProductSchema, sourceKeyFor, type NormalizedProduct } from "../lib/import/types";
+import { normalizedProductSchema, sourceKeyFor, type NormalizedProduct, type ParseResult } from "../lib/import/types";
 import {
   buildProductSetInput,
   imagesAllowed,
@@ -64,17 +64,51 @@ export interface CreatePreviewInput {
   fetchImpl?: typeof fetch;
 }
 
+/** CSV-bestand → importvoorbeeld (behouden voor bestaande aanroepen). */
 export async function createCsvPreview(input: CreatePreviewInput) {
+  return createPreview({ ...input, sourceName: input.fileName, format: "CSV" });
+}
+
+export interface CreateSourcePreviewInput {
+  shop: ShopRef;
+  userId: string | null;
+  sourceName: string;
+  format: SourceFormat;
+  /** Ruwe broninhoud; wordt genegeerd als `parsed` is meegegeven. */
+  text?: string;
+  /** Al ingelezen bron (bv. opgehaalde feed). */
+  parsed?: ParseResult;
+  supplierKey?: string;
+  idPrefix?: string | null;
+  imageRightsFromSupplier?: boolean;
+  /** Alleen deze externe ID's opnemen (selectie vanuit Producten zoeken). */
+  onlyExternalIds?: string[];
+  maxRows?: number;
+  fetchImpl?: typeof fetch;
+}
+
+/** Elke bron (CSV, XML-feed, JSON-feed) → importvoorbeeld met prijzen, controles en duplicaatcheck. */
+export async function createPreview(input: CreateSourcePreviewInput) {
   await ensureSupplierRegistry();
-  const supplier = await db.supplier.findUniqueOrThrow({ where: { key: input.supplierKey } });
+  const supplierKey = input.supplierKey ?? SUPPLIER_KEY_FOR_FORMAT[input.format];
+  const supplier = await db.supplier.findUniqueOrThrow({ where: { key: supplierKey } });
   if (supplier.integrationStatus !== "AVAILABLE") throw new Error(`Import via ${supplier.name} is nog niet beschikbaar.`);
 
   const shopCurrency = input.shop.currencyCode ?? "EUR";
-  const parsed = parseProductCsv(input.text, {
-    supplierKey: supplier.key,
-    defaultCurrency: shopCurrency,
-    maxRows: input.maxRows ?? Number(process.env.NOBLENEST_MAX_ROWS ?? 5000),
-  });
+  let parsed =
+    input.parsed ??
+    parseSource(input.format, input.text ?? "", {
+      supplierKey: supplier.key,
+      defaultCurrency: shopCurrency,
+      idPrefix: input.idPrefix,
+      imageRightsFromSupplier: input.imageRightsFromSupplier,
+      maxRows: input.maxRows ?? Number(process.env.NOBLENEST_MAX_ROWS ?? 5000),
+    });
+  if (input.onlyExternalIds) {
+    const wanted = new Set(input.onlyExternalIds);
+    parsed = { ...parsed, products: parsed.products.filter((p) => wanted.has(p.externalId)), errors: [] };
+    if (parsed.products.length === 0) throw new Error("Geen van de geselecteerde producten is (nog) in de bron gevonden.");
+  }
 
   // Bestaande imports opzoeken voor duplicaatcontrole (alleen deze winkel).
   const keys = parsed.products.map((p) => sourceKeyFor(p.supplierKey, p.externalId));
@@ -125,9 +159,9 @@ export async function createCsvPreview(input: CreatePreviewInput) {
     data: {
       shopId: input.shop.id,
       createdById: input.userId,
-      type: "CSV",
+      type: input.format,
       status: "PREVIEW",
-      sourceName: input.fileName.slice(0, 255),
+      sourceName: input.sourceName.slice(0, 255),
       supplierKey: supplier.key,
       totalItems: items.length,
       skippedItems: items.filter((i) => i.status === "SKIPPED_DUPLICATE").length,
@@ -143,8 +177,8 @@ export async function createCsvPreview(input: CreatePreviewInput) {
     entityType: "ImportJob",
     entityId: job.id,
     level: parsed.errors.length ? "WARNING" : "INFO",
-    message: `CSV "${job.sourceName}" ingelezen: ${items.length} producten, ${parsed.errors.length} regelfout(en).`,
-    metadata: { totalRows: parsed.totalRows, products: items.length, errors: parsed.errors.length, rates: rates.source, ratesWarning: rates.warning },
+    message: `${input.format} "${job.sourceName}" ingelezen: ${items.length} producten, ${parsed.errors.length} regelfout(en).`,
+    metadata: { format: input.format, totalRows: parsed.totalRows, products: items.length, errors: parsed.errors.length, rates: rates.source, ratesWarning: rates.warning },
   });
 
   return { job, ratesWarning: rates.warning };

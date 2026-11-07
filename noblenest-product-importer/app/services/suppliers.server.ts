@@ -54,21 +54,21 @@ export const SUPPLIER_REGISTRY: SupplierDefinition[] = [
     key: "xml-feed",
     name: "XML-productfeed",
     type: "FEED",
-    integrationStatus: "PLANNED",
+    integrationStatus: "AVAILABLE",
     website: null,
-    description: "Import uit een XML-productfeed die je leverancier beschikbaar stelt (bijvoorbeeld Google Shopping-formaat).",
-    capabilities: NONE,
-    plannedPhase: 3,
+    description:
+      "Productfeed in Google Merchant Center-formaat (RSS of Atom), het meest gebruikte feedformaat bij leveranciers. Varianten via item_group_id, inkoopprijs via cost_of_goods_sold of price. Als bestand uploaden of als feed-URL koppelen (veilig opgehaald, URL versleuteld opgeslagen).",
+    capabilities: { ...NONE, connectionCheck: true, products: true, variants: true, prices: true, stock: true, images: true, shipping: true },
   },
   {
     key: "json-feed",
     name: "JSON-productfeed",
     type: "FEED",
-    integrationStatus: "PLANNED",
+    integrationStatus: "AVAILABLE",
     website: null,
-    description: "Import uit een JSON-productfeed of -export van je leverancier.",
-    capabilities: NONE,
-    plannedPhase: 3,
+    description:
+      "JSON-export van je leverancier in het Noblenest-formaat (zie docs/FEED-FORMATEN.md). Als bestand uploaden of als feed-URL koppelen.",
+    capabilities: { ...NONE, connectionCheck: true, products: true, variants: true, prices: true, stock: true, images: true, shipping: true },
   },
   {
     key: "manual",
@@ -87,7 +87,7 @@ export const SUPPLIER_REGISTRY: SupplierDefinition[] = [
     integrationStatus: "REQUIRES_APPROVAL",
     website: "https://openservice.aliexpress.com",
     description:
-      "Koppeling via het officiële AliExpress Open Platform (Dropshipping-API). Hiervoor heb je een goedgekeurd ontwikkelaarsaccount met App Key en App Secret nodig. De adapter wordt gebouwd in fase 3; tot die tijd kun je AliExpress-producten via CSV importeren.",
+      "Koppeling via het officiële AliExpress Open Platform (Dropshipping-API). Hiervoor heb je een goedgekeurd ontwikkelaarsaccount met App Key en App Secret nodig. Zodra je App Key en App Secret hebt, kan de adapter worden gebouwd; tot die tijd importeer je AliExpress-producten via CSV of een feed.",
     capabilities: NONE,
     plannedPhase: 3,
   },
@@ -155,5 +155,5 @@ export async function getSupplierByKey(key: string) {
 }
 
 export function importableSuppliers() {
-  return SUPPLIER_REGISTRY.filter((s) => s.integrationStatus === "AVAILABLE" && s.type === "FILE");
+  return SUPPLIER_REGISTRY.filter((s) => s.integrationStatus === "AVAILABLE" && (s.type === "FILE" || s.type === "FEED"));
 }

@@ -136,9 +136,13 @@ model SupplierConnection {
   id                   String           @id @default(cuid())
   shopId               String
   supplierId           String
+  /// Naam van de koppeling, bv. "Linnenhuis feed" (meerdere feeds per leverancierstype mogelijk)
+  name                 String           @default("")
   status               ConnectionStatus @default(NOT_CONFIGURED)
-  /// Versleutelde JSON met credentials (nooit in platte tekst).
+  /// Versleutelde JSON met credentials of feed-URL (nooit in platte tekst; URL's bevatten vaak tokens).
   credentialsEncrypted String?
+  /// Niet-geheime instellingen, bv. { format, label, imageRights, host, productCount }
+  config               Json?
   lastCheckedAt        DateTime?
   lastError            String?
   createdAt            DateTime         @default(now())
@@ -147,7 +151,8 @@ model SupplierConnection {
   shop     Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
 
-  @@unique([shopId, supplierId])
+  @@unique([shopId, supplierId, name])
+  @@index([shopId])
 }
 
 // ---------------------------------------------------------------------------

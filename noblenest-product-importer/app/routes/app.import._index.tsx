@@ -1,11 +1,14 @@
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
+import { useRef } from "react";
 import { useFetcher, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { requireShop } from "../services/shop.server";
-import { createCsvPreview } from "../services/import.server";
+import { createPreview } from "../services/import.server";
 import { logAudit } from "../services/audit.server";
-import { checkCsvUpload, defaultUploadLimits } from "../lib/security/upload";
+import { checkImportUpload, defaultUploadLimits } from "../lib/security/upload";
+import { detectFormat } from "../lib/import/sources";
+import { SOURCE_LABEL_PATTERN } from "../lib/import/normalize";
 import { formatDateTime, JOB_STATUS } from "../lib/format";
 import { useElementEvent } from "../hooks/use-element-event";
 
@@ -43,22 +46,32 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const form = await request.formData();
   const file = form.get("file");
-  if (!(file instanceof File)) return { error: "Kies een CSV-bestand om te uploaden." };
+  if (!(file instanceof File)) return { error: "Kies een CSV-, XML- of JSON-bestand om te uploaden." };
+  const label = String(form.get("label") ?? "").trim().toLowerCase() || null;
+  if (label && !SOURCE_LABEL_PATTERN.test(label)) {
+    return { error: "Bronlabel: alleen kleine letters, cijfers en streepjes (max. 40 tekens)." };
+  }
+  const imageRightsFromSupplier = form.get("imageRights") === "true";
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const check = checkCsvUpload({ name: file.name, size: file.size, type: file.type }, bytes, limits);
+  const check = checkImportUpload({ name: file.name, size: file.size, type: file.type }, bytes, limits);
   if (!check.ok) {
     await logAudit({ shopId: shop.id, actorUserId: user?.id, level: "WARNING", action: "import.upload.rejected", message: `Upload geweigerd: ${check.error}` });
     return { error: check.error };
   }
 
   try {
-    const { job } = await createCsvPreview({
+    const format = detectFormat(file.name, check.text!);
+    if (!format) return { error: "Bestandsformaat niet herkend. Gebruik .csv, .xml (Google-productfeed) of .json." };
+    const { job } = await createPreview({
       shop,
       userId: user?.id ?? null,
-      fileName: file.name,
+      sourceName: file.name,
+      format,
       text: check.text!,
-      supplierKey: "csv",
+      idPrefix: label,
+      // Voor CSV staat de toestemming per product in de kolom image_rights.
+      imageRightsFromSupplier: format !== "CSV" && imageRightsFromSupplier,
     });
     const target = `/app/import/${job.id}`;
     return redirect ? redirect(target) : Response.redirect(target, 303);
@@ -75,11 +88,15 @@ export default function ImportPage() {
   const uploading = fetcher.state !== "idle";
   const error = fetcher.data && "error" in fetcher.data ? fetcher.data.error : null;
 
+  const labelRef = useRef<HTMLElementTagNameMap["s-text-field"]>(null);
+  const rightsRef = useRef<HTMLElementTagNameMap["s-checkbox"]>(null);
   const dropZoneRef = useElementEvent<HTMLElementTagNameMap["s-drop-zone"]>("change", (event) => {
     const file = event.currentTarget.files?.[0];
     if (!file) return;
     const data = new FormData();
     data.append("file", file, file.name);
+    data.append("label", labelRef.current?.value ?? "");
+    data.append("imageRights", String(rightsRef.current?.checked ?? false));
     fetcher.submit(data, { method: "post", encType: "multipart/form-data" });
   });
 
@@ -94,23 +111,37 @@ export default function ImportPage() {
         </s-banner>
       ) : null}
 
-      <s-section heading="Producten importeren uit een CSV-bestand">
+      <s-section heading="Producten importeren uit een bestand">
         <s-stack direction="block" gap="base">
           <s-paragraph color="subdued">
-            Upload een CSV-export van je leverancier. Je krijgt eerst een voorbeeld met prijzen, varianten, foto’s en
-            controles. Pas na jouw akkoord worden de geselecteerde producten als concept in Shopify aangemaakt.
+            Upload een CSV-export, XML-productfeed (Google Merchant Center-formaat) of JSON-feed van je leverancier. Je
+            krijgt eerst een voorbeeld met prijzen, varianten, foto’s en controles. Pas na jouw akkoord worden de
+            geselecteerde producten als concept in Shopify aangemaakt.
           </s-paragraph>
+          <s-grid gridTemplateColumns="1fr 1fr" gap="base" alignItems="center">
+            <s-text-field
+              ref={labelRef}
+              label="Bronlabel (optioneel)"
+              placeholder="bijv. linnenhuis"
+              details="Voorkomt botsende ID’s tussen leveranciers. Gebruik per leverancier steeds hetzelfde label."
+            />
+            <s-checkbox
+              ref={rightsRef}
+              label="Leverancier staat gebruik van feedafbeeldingen toe"
+              details="Alleen voor XML/JSON. Bij CSV geldt de kolom image_rights per product."
+            />
+          </s-grid>
           <s-drop-zone
             ref={dropZoneRef}
-            label="CSV-bestand"
-            accept=".csv,text/csv"
-            accessibilityLabel="Upload een CSV-bestand met producten"
+            label="Importbestand"
+            accept=".csv,.xml,.json,text/csv,application/xml,text/xml,application/json"
+            accessibilityLabel="Upload een CSV-, XML- of JSON-bestand met producten"
             disabled={uploading}
             error={error ?? undefined}
           >
             <s-stack direction="block" gap="small-200" alignItems="center">
-              <s-text type="strong">{uploading ? "Bestand wordt ingelezen…" : "Sleep je CSV-bestand hierheen of klik om te kiezen"}</s-text>
-              <s-text color="subdued">Maximaal {maxMb} MB · komma, puntkomma of tab · UTF-8 of Excel</s-text>
+              <s-text type="strong">{uploading ? "Bestand wordt ingelezen…" : "Sleep je bestand hierheen of klik om te kiezen"}</s-text>
+              <s-text color="subdued">Maximaal {maxMb} MB · CSV (komma/puntkomma/tab), XML of JSON · UTF-8 of Excel</s-text>
             </s-stack>
           </s-drop-zone>
           {uploading ? (
@@ -122,10 +153,23 @@ export default function ImportPage() {
         </s-stack>
       </s-section>
 
+      <s-section heading="Feed van je leverancier koppelen">
+        <s-stack direction="block" gap="small-200">
+          <s-paragraph color="subdued">
+            Heeft je leverancier een feed-URL? Koppel die eenmalig bij Leveranciers. Daarna kun je de catalogus doorzoeken en
+            selecties importeren zonder bestanden te downloaden.
+          </s-paragraph>
+          <s-stack direction="inline" gap="base">
+            <s-button href="/app/suppliers">Feedbron koppelen</s-button>
+            <s-button href="/app/search" variant="tertiary">Producten zoeken</s-button>
+          </s-stack>
+        </s-stack>
+      </s-section>
+
       <s-section heading="Product importeren via URL">
         <s-paragraph color="subdued">
-          Importeren via een productlink wordt gebouwd in fase 4 en werkt alleen voor leveranciers met een officiële,
-          toegestane koppeling (zie Leveranciers). Tot die tijd importeer je via CSV.
+          Importeren via een losse productlink volgt in fase 4 en werkt alleen voor leveranciers met een officiële,
+          toegestane koppeling. Tot die tijd importeer je via een bestand of feed.
         </s-paragraph>
       </s-section>
 
@@ -164,14 +208,20 @@ export default function ImportPage() {
         )}
       </s-section>
 
-      <s-section slot="aside" heading="Voorbeeldcatalogus">
+      <s-section slot="aside" heading="Voorbeeldbestanden">
         <s-stack direction="block" gap="base">
           <s-paragraph>
-            Test de importflow zonder leverancier met 6 voorbeeldproducten (varianten, USD-inkoop, ontbrekende foto en een
-            product zonder inkoopprijs).
+            Test de importflow zonder leverancier: varianten, USD-inkoop, ontbrekende foto en een product zonder
+            inkoopprijs.
           </s-paragraph>
           <a href="/voorbeeld/noblenest-voorbeeldcatalogus.csv" download="noblenest-voorbeeldcatalogus.csv">
-            Voorbeeld-CSV downloaden
+            Voorbeeld-CSV (6 producten)
+          </a>
+          <a href="/voorbeeld/noblenest-voorbeeldfeed.xml" download="noblenest-voorbeeldfeed.xml">
+            Voorbeeld-XML-feed (Google-formaat)
+          </a>
+          <a href="/voorbeeld/noblenest-voorbeeldfeed.json" download="noblenest-voorbeeldfeed.json">
+            Voorbeeld-JSON-feed
           </a>
         </s-stack>
       </s-section>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Voorbeeldleverancier — productfeed (testgegevens)</title>
+    <link>https://voorbeeldleverancier.nl</link>
+    <description>Voorbeeldfeed in Google Merchant Center-formaat voor Noblenest</description>
+    <item>
+      <g:id>NF-2001-ZW</g:id>
+      <g:item_group_id>NF-2001</g:item_group_id>
+      <g:title>Wollen plaid Herringbone</g:title>
+      <g:description>Zachte plaid van gerecyclede wol met visgraatmotief. 130 x 170 cm.</g:description>
+      <g:link>https://voorbeeldleverancier.nl/producten/nf-2001</g:link>
+      <g:image_link>https://picsum.photos/id/1056/1200/1200</g:image_link>
+      <g:additional_image_link>https://picsum.photos/id/1057/1200/1200</g:additional_image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>34.90 EUR</g:price>
+      <g:brand>Noblenest Testcollectie</g:brand>
+      <g:gtin>8712345000011</g:gtin>
+      <g:mpn>NF-2001-ZW</g:mpn>
+      <g:color>Antraciet</g:color>
+      <g:product_type>Wonen &gt; Textiel &gt; Plaids</g:product_type>
+      <g:shipping_weight>0.9 kg</g:shipping_weight>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:shipping>
+        <g:country>NL</g:country>
+        <g:price>4.95 EUR</g:price>
+        <g:min_transit_time>1</g:min_transit_time>
+        <g:max_transit_time>2</g:max_transit_time>
+      </g:shipping>
+    </item>
+    <item>
+      <g:id>NF-2001-ZA</g:id>
+      <g:item_group_id>NF-2001</g:item_group_id>
+      <g:title>Wollen plaid Herringbone</g:title>
+      <g:description>Zachte plaid van gerecyclede wol met visgraatmotief. 130 x 170 cm.</g:description>
+      <g:link>https://voorbeeldleverancier.nl/producten/nf-2001</g:link>
+      <g:image_link>https://picsum.photos/id/1058/1200/1200</g:image_link>
+      <g:availability>out_of_stock</g:availability>
+      <g:price>34.90 EUR</g:price>
+      <g:brand>Noblenest Testcollectie</g:brand>
+      <g:gtin>8712345000028</g:gtin>
+      <g:mpn>NF-2001-ZA</g:mpn>
+      <g:color>Zand</g:color>
+      <g:product_type>Wonen &gt; Textiel &gt; Plaids</g:product_type>
+      <g:shipping_weight>0.9 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>NL</g:country>
+        <g:price>4.95 EUR</g:price>
+      </g:shipping>
+    </item>
+    <item>
+      <g:id>NF-2002</g:id>
+      <g:title>Glazen karaf Ripple</g:title>
+      <g:description>Mondgeblazen glas met ribbelstructuur, 1 liter.</g:description>
+      <g:link>https://voorbeeldleverancier.nl/producten/nf-2002</g:link>
+      <g:image_link>https://picsum.photos/id/1059/1200/1200</g:image_link>
+      <g:availability>preorder</g:availability>
+      <g:price>79.00 USD</g:price>
+      <g:cost_of_goods_sold>18.40 USD</g:cost_of_goods_sold>
+      <g:product_type>Keuken &gt; Glaswerk</g:product_type>
+      <g:shipping_weight>650 g</g:shipping_weight>
+    </item>
+  </channel>
+</rss>

@@ -74,6 +74,13 @@ export const INTEGRATION_STATUS: Record<string, { label: string; tone: Tone }> =
   PLANNED: { label: "Gepland", tone: "info" },
 };
 
+export const CONNECTION_STATUS: Record<string, { label: string; tone: Tone }> = {
+  NOT_CONFIGURED: { label: "Nog niet gecontroleerd", tone: "neutral" },
+  CONNECTED: { label: "Verbonden", tone: "success" },
+  ERROR: { label: "Fout", tone: "critical" },
+  DISCONNECTED: { label: "Losgekoppeld", tone: "neutral" },
+};
+
 export const STRATEGY_LABEL: Record<string, string> = {
   FIXED_MARKUP: "Vast opslagbedrag",
   PERCENTAGE_MARKUP: "Percentage opslag",

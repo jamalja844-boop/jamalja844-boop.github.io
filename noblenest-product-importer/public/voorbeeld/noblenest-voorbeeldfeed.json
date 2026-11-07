@@ -1,0 +1,39 @@
+{
+  "products": [
+    {
+      "external_id": "NJ-3001",
+      "title": "Linnen servetten Saffier (set van 4)",
+      "description": "Gewassen linnen servetten, 45 x 45 cm.",
+      "vendor": "Voorbeeldleverancier Linnen",
+      "product_type": "Tafellinnen",
+      "tags": ["Tafel", "Linnen"],
+      "source_url": "https://voorbeeldleverancier.nl/producten/nj-3001",
+      "currency": "EUR",
+      "cost_price": 14.5,
+      "shipping_cost": 3.95,
+      "delivery_days_min": 2,
+      "delivery_days_max": 4,
+      "image_urls": ["https://picsum.photos/id/1060/1200/1200"],
+      "image_rights": true,
+      "safety_info": "Wassen op 40 °C.",
+      "eu_responsible_person": "Voorbeeldleverancier Linnen B.V., Voorbeeldstraat 1, 1000 AA Amsterdam",
+      "country_of_origin": "PT",
+      "options": ["Kleur"],
+      "variants": [
+        { "sku": "NJ-3001-SAF", "option_values": ["Saffier"], "stock_quantity": 20, "barcode": "8712345000035" },
+        { "sku": "NJ-3001-SAL", "option_values": { "Kleur": "Salie" }, "stock_quantity": 0, "cost_price": 15.0 }
+      ]
+    },
+    {
+      "externe_id": "NJ-3002",
+      "titel": "Eikenhouten snijplank Rustiek",
+      "beschrijving": "Massief eiken, geolied. 40 x 25 cm.",
+      "inkoopprijs": "19,90",
+      "valuta": "EUR",
+      "voorraad": 8,
+      "levertijd_min": 3,
+      "levertijd_max": 5,
+      "afbeeldingen": "https://picsum.photos/id/1061/1200/1200"
+    }
+  ]
+}

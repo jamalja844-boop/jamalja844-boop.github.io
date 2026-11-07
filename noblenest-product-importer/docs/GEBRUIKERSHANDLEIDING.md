@@ -9,13 +9,13 @@ Noblenest haalt productgegevens van leveranciers binnen, controleert ze, bereken
 | Pagina | Wat je er doet |
 |---|---|
 | **Dashboard** | Overzicht: geïmporteerd, concepten, actief, zonder afbeelding, mislukte imports, recente imports |
-| **Producten zoeken** | *(fase 3)* catalogi van gekoppelde leveranciers doorzoeken |
-| **Importeren** | CSV uploaden, voorbeeld controleren, importeren, importgeschiedenis |
+| **Producten zoeken** | Catalogus van een gekoppelde feed doorzoeken, filteren, vergelijken en selecteren |
+| **Importeren** | CSV, XML- of JSON-bestand uploaden, voorbeeld controleren, importeren, importgeschiedenis |
 | **Bulkimport** | *(fase 6)* grote catalogi via een achtergrondwachtrij |
 | **Mijn producten** | Alle geïmporteerde producten met leverancier, inkoop- en verkoopprijs |
 | **AI Studio** | *(fase 5)* Nederlandse titels, beschrijvingen en SEO |
 | **Prijsregels** | Bepalen hoe verkoopprijzen worden berekend, met rekenvoorbeeld |
-| **Leveranciers** | Welke koppelingen beschikbaar zijn en wat ze ondersteunen |
+| **Leveranciers** | Feedbronnen koppelen en controleren; welke koppelingen beschikbaar zijn |
 | **Synchronisatie** | *(fase 6)* voorraad en prijzen bijwerken |
 | **Instellingen** | AI-sleutels, importvoorkeuren, wisselkoersen, veiligheid |
 | **Logboeken** | Elke belangrijke actie, waarschuwing en fout |
@@ -49,6 +49,16 @@ Gebruik het **rekenvoorbeeld** rechts om een regel te controleren voordat je imp
 5. Klik **… product(en) als concept importeren**. Dit is je akkoord.
 6. Bij meer dan 25 producten verschijnt **Doorgaan** voor de volgende reeks. Mislukte producten kun je **opnieuw proberen** (max. 3 pogingen); een import die nog loopt kun je **annuleren**.
 
+## 2b. Leveranciersfeeds koppelen en doorzoeken
+
+1. **Leveranciers → Feedbron toevoegen**: naam, formaat (XML/Google of JSON), feed-URL (https), optioneel bronlabel, en of de leverancier gebruik van afbeeldingen toestaat. Noblenest slaat de URL versleuteld op en controleert direct of de feed werkt.
+2. **Controleren** toont of de feed bereikbaar is en hoeveel producten erin staan; fouten staan bij de bron en in het logboek.
+3. **Doorzoeken** (of menu *Producten zoeken*): filter op tekst, maximale inkoopprijs en voorraad. Selecteer twee of meer producten om ze te **vergelijken** (inkoop, verzending, levertijd, voorraad, varianten, foto's, aandachtspunten).
+4. **… naar importvoorbeeld** zet je selectie door. Daarna werkt alles zoals bij een CSV-import: prijzen en controles bekijken, akkoord geven, als concept importeren.
+5. **Alles naar voorbeeld** neemt de hele feed in één voorbeeld (al geïmporteerde producten worden als duplicaat overgeslagen).
+
+Zie [FEED-FORMATEN.md](FEED-FORMATEN.md) voor de ondersteunde velden.
+
 ## 3. Na de import
 
 - Open een product via **Openen in Shopify** en controleer tekst, foto's en prijs.
@@ -70,4 +80,4 @@ Nee. Noblenest maakt alleen nieuwe producten aan en overschrijft nooit bestaande
 Het product wordt als mislukt gemarkeerd met "uitkomst onbekend". Bij *Opnieuw proberen* controleert Noblenest eerst in Shopify of het product al bestaat en koppelt het dan, zonder dubbel product.
 
 **Waarom kan ik AliExpress/Temu nog niet koppelen?**
-Noblenest gebruikt alleen officiële, toegestane koppelingen. Zie de pagina *Leveranciers* voor de status per leverancier. Een CSV-export werkt altijd.
+Noblenest gebruikt alleen officiële, toegestane koppelingen. AliExpress vereist een goedgekeurd Open Platform-account (App Key en App Secret). Zie de pagina *Leveranciers* voor de status per leverancier. Een CSV-export of productfeed van je leverancier werkt altijd.

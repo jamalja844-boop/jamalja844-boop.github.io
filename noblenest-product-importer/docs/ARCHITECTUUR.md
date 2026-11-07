@@ -8,10 +8,11 @@ Shopify-admin (iframe)
        ├─ routes/            UI + loaders/actions (server)
        ├─ services/*.server  orkestratie, database, Shopify-aanroepen
        ├─ lib/               pure domeinlogica (geen database/netwerk) — volledig unit-getest
-       │    ├─ import/       CSV-parser, normalisatie, HTML-sanering, kwaliteitscontrole, duplicaten
+       │    ├─ import/       normalisatie (gedeeld), CSV, feeds/ (Google-XML, JSON), sources (adapterinterface),
+       │    │                HTML-sanering, kwaliteitscontrole, duplicaten
        │    ├─ pricing/      prijscalculator (decimal.js), ECB-wisselkoersen
        │    ├─ shopify/      productSet-invoer + GraphQL-documenten
-       │    └─ security/     AES-256-GCM, uploadcontrole
+       │    └─ security/     AES-256-GCM, uploadcontrole, safe-fetch (SSRF-bescherming)
        └─ PostgreSQL (Prisma)          Redis + BullMQ (fase 6)
 ```
 
@@ -33,6 +34,22 @@ Shopify-admin (iframe)
 
 ### Waarom productSet alleen voor nieuwe producten?
 `productSet` verwijdert lijst-elementen (varianten, media, metafields) die niet in de invoer staan. Om bestaande gegevens nooit onbedoeld te overschrijven, gebruikt Noblenest `productSet` uitsluitend om nieuwe producten aan te maken. Synchronisatie (fase 6) gebruikt gerichte mutaties zoals `productVariantsBulkUpdate` en voorraadmutaties.
+
+## Importbronnen (adapters)
+
+Elke bron levert *records* (één per variant, canonieke veldnamen) aan `normalizeRecords`, dat ze groepeert per `external_id` en valideert. Zo hebben CSV, XML-feed en JSON-feed exact dezelfde regels en foutmeldingen.
+
+| Bron | Parser | Leverancier-sleutel |
+|---|---|---|
+| CSV-bestand | `lib/import/csv.ts` | `csv` |
+| XML-feed (Google Merchant Center, RSS/Atom) | `lib/import/feeds/google-xml.ts` | `xml-feed` |
+| JSON-feed (Noblenest-formaat) | `lib/import/feeds/json-feed.ts` | `json-feed` |
+| Leveranciers-API (bv. AliExpress) | interface `SupplierAdapter` in `lib/import/sources.ts` | volgt bij API-toegang |
+
+**Feedbronnen** (`SupplierConnection`, meerdere per leverancierstype): de feed-URL staat versleuteld in `credentialsEncrypted` (AAD = winkel + verbinding); `config` bevat alleen niet-geheime gegevens (formaat, label, host, aantallen). Ophalen via `safeFetchText`:
+- alleen https, publieke hostnamen, poort 443;
+- **eigen DNS-lookup in de undici-dispatcher** die privé/gereserveerde adressen weigert bij elke verbinding (ook na redirects) — bescherming tegen DNS-rebinding;
+- handmatige redirects (max. 3, elk opnieuw gecontroleerd), maximale grootte (stream wordt afgebroken), time-out, toegestane content-types.
 
 ## Importflow
 
@@ -95,5 +112,6 @@ Externe ID's (`externalId`, `sourceKey`) en Shopify-ID's (`shopifyProductId`, `s
 | Logboek | Alle imports, instellingen en fouten; geheimen gemaskeerd |
 | AVG | Geen klantgegevens opgeslagen; `shop/redact` verwijdert alle winkeldata |
 | Container | Draait als niet-root gebruiker |
+| Feeds | XML zonder DOCTYPE/ENTITY (XXE), feed-URL versleuteld, SSRF-veilig ophalen |
 
 Nog te doen (zie ROADMAP): rate limiting per winkel en BullMQ-achtergrondtaken (fase 6/7).
