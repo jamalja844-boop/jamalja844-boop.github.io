@@ -5,6 +5,12 @@
         "source": "github",
         "repo": "anthropics/claude-plugins-official"
       }
+    },
+    "youtube-agent-skill": {
+      "source": {
+        "source": "github",
+        "repo": "Jakeschincariol/youtube-agent-skill"
+      }
     }
   },
   "enabledPlugins": {
@@ -13,6 +19,7 @@
     "playwright@claude-plugins-official": true,
     "github@claude-plugins-official": true,
     "shopify-ai-toolkit@claude-plugins-official": true,
-    "claude-code-setup@claude-plugins-official": true
+    "claude-code-setup@claude-plugins-official": true,
+    "youtube-agent@youtube-agent-skill": true
   }
 }
