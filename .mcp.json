@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "photocraft": {
+      "command": "photocraft-cli",
+      "args": ["mcp"]
+    }
+  }
+}
