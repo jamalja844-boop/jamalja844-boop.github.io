@@ -17,6 +17,12 @@
         "source": "github",
         "repo": "thedotmack/claude-mem"
       }
+    },
+    "rea": {
+      "source": {
+        "source": "github",
+        "repo": "morluto/rea"
+      }
     }
   },
   "enabledPlugins": {
@@ -27,6 +33,7 @@
     "shopify-ai-toolkit@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true,
     "youtube-agent@youtube-agent-skill": true,
-    "claude-mem@thedotmack": true
+    "claude-mem@thedotmack": true,
+    "rea@rea": true
   }
 }
