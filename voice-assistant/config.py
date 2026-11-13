@@ -11,7 +11,7 @@ FAQ = os.getenv("FAQ", "")                          # short free-text knowledge
 HUMAN_TRANSFER_NUMBER = os.getenv("HUMAN_TRANSFER_NUMBER", "")  # E.164, optional
 
 # --- Providers ---
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")   # anthropic | openai
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")   # anthropic | openai | mock
 LLM_MODEL = os.getenv("LLM_MODEL", "claude-sonnet-4-5")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

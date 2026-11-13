@@ -40,9 +40,31 @@ GRENZEN:
 def reply(history: list[dict], user_text: str) -> str:
     """history: list of {"role": "user"|"assistant", "content": str}. Returns assistant text."""
     messages = history + [{"role": "user", "content": user_text}]
-    if config.LLM_PROVIDER == "anthropic":
+    provider = config.LLM_PROVIDER
+    # Auto-fall back to mock when the selected provider has no key (handy for local testing).
+    if provider == "anthropic" and not config.ANTHROPIC_API_KEY:
+        provider = "mock"
+    elif provider == "openai" and not config.OPENAI_API_KEY:
+        provider = "mock"
+    if provider == "mock":
+        return _mock(user_text)
+    if provider == "anthropic":
         return _anthropic(messages)
     return _openai(messages)
+
+
+def _mock(user_text: str) -> str:
+    """Keyless canned reply for local testing / demos (no network)."""
+    t = user_text.lower()
+    if any(w in t for w in ("mens", "robot", "ai", "echt persoon")):
+        return (f"Nee hoor, ik ben de digitale assistent van {config.COMPANY_NAME}. "
+                "Ik help u graag verder.")
+    if "afspraak" in t or "afspreken" in t:
+        return "Dat kan ik voor u inplannen. Op welke dag komt het u uit?"
+    if "open" in t or "tijd" in t:
+        return f"Onze openingstijden zijn {config.OPENING_HOURS}. Kan ik u nog ergens mee helpen?"
+    return ("Dank u. Ik heb uw vraag genoteerd. Kunt u kort toelichten "
+            "waarmee ik u precies kan helpen?")
 
 
 def _anthropic(messages: list[dict]) -> str:

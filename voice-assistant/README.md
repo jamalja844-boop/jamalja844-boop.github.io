@@ -39,6 +39,27 @@ ngrok http 8080              # geeft bv. https://abc123.ngrok.io
 
 Bel het nummer. De assistent begroet je, verstaat spraak, antwoordt via het LLM en praat terug.
 
+## Snel testen zonder sleutels of telefoon (mock-modus)
+
+Je kunt de hele gespreksflow lokaal zien zonder Twilio, API-sleutels of internet:
+
+```bash
+cd voice-assistant
+pip install -r requirements.txt
+./test_local.sh          # start in mock-modus en toont de TwiML-antwoorden
+```
+
+De assistent valt automatisch terug op mock-antwoorden als er geen LLM-sleutel is
+(`LLM_PROVIDER=mock`), zodat je de begroeting, de eerlijke "ben jij een mens?"-reactie
+en de afspraak-flow meteen ziet werken.
+
+## Draaien met Docker
+
+```bash
+cp .env.example .env     # vul in
+docker compose up --build
+```
+
 ## Configuratie
 
 Alles via `.env` (zie `.env.example`): bedrijfsnaam, naam van de assistent, taal, openingstijden,
