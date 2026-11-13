@@ -5,6 +5,24 @@
         "source": "github",
         "repo": "anthropics/claude-plugins-official"
       }
+    },
+    "youtube-agent-skill": {
+      "source": {
+        "source": "github",
+        "repo": "Jakeschincariol/youtube-agent-skill"
+      }
+    },
+    "thedotmack": {
+      "source": {
+        "source": "github",
+        "repo": "thedotmack/claude-mem"
+      }
+    },
+    "rea": {
+      "source": {
+        "source": "github",
+        "repo": "morluto/rea"
+      }
     }
   },
   "enabledPlugins": {
@@ -12,6 +30,11 @@
     "context7@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "github@claude-plugins-official": true,
-    "shopify-ai-toolkit@claude-plugins-official": true
+    "shopify-ai-toolkit@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "modern-web-guidance@claude-plugins-official": true,
+    "youtube-agent@youtube-agent-skill": true,
+    "claude-mem@thedotmack": true,
+    "rea@rea": true
   }
 }
