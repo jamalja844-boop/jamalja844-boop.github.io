@@ -33,6 +33,7 @@
     "shopify-ai-toolkit@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true,
     "modern-web-guidance@claude-plugins-official": true,
+    "mattpocock-skills@claude-plugins-official": true,
     "youtube-agent@youtube-agent-skill": true,
     "claude-mem@thedotmack": true,
     "rea@rea": true
