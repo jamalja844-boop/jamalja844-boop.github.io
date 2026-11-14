@@ -19,6 +19,13 @@
     "playwright@claude-plugins-official": true,
     "github@claude-plugins-official": true,
     "shopify-ai-toolkit@claude-plugins-official": true,
-    "treg@treg": true
+    "treg@treg": true,
+    "web-access@treg": true,
+    "lead-signals@treg": true,
+    "rea-growth@treg": true,
+    "recruit@treg": true,
+    "make-ugc@treg": true,
+    "ai-ugc-video@treg": true,
+    "jev-memory@treg": true
   }
 }
