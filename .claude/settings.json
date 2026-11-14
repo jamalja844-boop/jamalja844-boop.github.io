@@ -5,6 +5,12 @@
         "source": "github",
         "repo": "anthropics/claude-plugins-official"
       }
+    },
+    "treg": {
+      "source": {
+        "source": "github",
+        "repo": "superdesigndev/treg"
+      }
     }
   },
   "enabledPlugins": {
@@ -12,6 +18,7 @@
     "context7@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "github@claude-plugins-official": true,
-    "shopify-ai-toolkit@claude-plugins-official": true
+    "shopify-ai-toolkit@claude-plugins-official": true,
+    "treg@treg": true
   }
 }
