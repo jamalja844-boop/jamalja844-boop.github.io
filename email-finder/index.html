@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E-mail Finder</title>
+<style>
+  :root{--bg:#f5f6f8;--card:#fff;--ink:#16191f;--muted:#5b6573;--line:#e2e6ec;--accent:#0f766e;--accent-ink:#fff;--warn:#b45309;--chip:#eef1f5}
+  @media (prefers-color-scheme:dark){:root{--bg:#0f1216;--card:#181c22;--ink:#e8ebf0;--muted:#98a2b0;--line:#2a303a;--accent:#2dd4bf;--accent-ink:#06201d;--warn:#f0a04b;--chip:#222831}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:28px 16px 64px}
+  h1{margin:0 0 4px;font-size:26px;letter-spacing:-.02em}
+  .sub{color:var(--muted);margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  textarea{width:100%;min-height:150px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  button,.filebtn{border:0;border-radius:10px;padding:10px 16px;font:600 15px system-ui;cursor:pointer}
+  .primary{background:var(--accent);color:var(--accent-ink)}
+  .ghost,.filebtn{background:var(--chip);color:var(--ink);border:1px solid var(--line)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input[type=file]{display:none}
+  .status{color:var(--muted);font-size:14px;margin-left:auto}
+  progress{width:100%;height:8px;margin-top:12px;accent-color:var(--accent)}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  td.mail a{display:block;color:var(--accent);text-decoration:none;word-break:break-all}
+  .none{color:var(--warn)}
+  .note{font-size:13px;color:var(--muted)}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>E-mail Finder</h1>
+  <p class="sub">Zoekt de publiek vermelde contact-e-mails op bedrijfswebsites (homepage + contactpagina's).</p>
+
+  <div class="card">
+    <label for="urls"><b>Websites</b> — één per regel</label>
+    <textarea id="urls" placeholder="https://www.voorbeeldbedrijf.nl&#10;anderbedrijf.nl"></textarea>
+    <div class="row">
+      <button class="primary" id="scan">Zoek e-mails</button>
+      <label class="filebtn">CSV uploaden<input type="file" id="csv" accept=".csv,text/csv"></label>
+      <button class="ghost" id="export" disabled>Exporteer CSV</button>
+      <span class="status" id="status"></span>
+    </div>
+    <progress id="bar" value="0" max="1" hidden></progress>
+  </div>
+
+  <div class="card" id="resultcard" hidden>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Website</th><th>E-mails</th><th>Pagina's</th><th>Status</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card note">
+    <b>Netjes gebruiken.</b> Deze tool leest alleen pagina's die je zelf opgeeft, respecteert <code>robots.txt</code> en werkt in een rustig tempo.
+    Gevonden adressen zijn zakelijke contactgegevens die het bedrijf zelf publiceert. Voor zakelijke e-mail in Nederland gelden de
+    <b>AVG</b> en de <b>Telecommunicatiewet (art. 11.7)</b>: mail alleen relevant en persoonlijk, vermeld wie je bent,
+    en bied altijd een afmeldmogelijkheid. Bij twijfel: bel eerst, of gebruik het contactformulier.
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let results = [];
+
+function parseCsvLine(line){
+  const out=[]; let cur="", q=false;
+  for (let i=0;i<line.length;i++){
+    const c=line[i];
+    if (q){ if (c==='"' && line[i+1]==='"'){cur+='"';i++} else if (c==='"') q=false; else cur+=c; }
+    else if (c==='"') q=true; else if (c===',' || c===';'){out.push(cur);cur=""} else cur+=c;
+  }
+  out.push(cur); return out;
+}
+
+$("csv").addEventListener("change", async e => {
+  const file = e.target.files[0]; if (!file) return;
+  const lines = (await file.text()).split(/\r?\n/).filter(Boolean);
+  const head = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  let col = head.findIndex(h => ["website","url","site","domein","domain"].includes(h));
+  const body = col >= 0 ? lines.slice(1) : lines; if (col < 0) col = 0;
+  const urls = body.map(l => (parseCsvLine(l)[col]||"").trim()).filter(u => /\./.test(u));
+  $("urls").value = urls.join("\n");
+  $("status").textContent = urls.length + " websites geladen uit CSV";
+  e.target.value = "";
+});
+
+function addRow(r){
+  const tr = document.createElement("tr");
+  const site = document.createElement("td"); site.textContent = r.url || r.input;
+  const mail = document.createElement("td"); mail.className = "mail";
+  if (r.emails.length) r.emails.forEach(m => { const a=document.createElement("a"); a.href="mailto:"+m; a.textContent=m; mail.appendChild(a); });
+  else { mail.textContent = "—"; mail.className = "none"; }
+  const pages = document.createElement("td"); pages.textContent = r.pages;
+  const st = document.createElement("td"); st.textContent = r.status; if (r.status !== "ok") st.className = "none";
+  tr.append(site, mail, pages, st); $("rows").appendChild(tr);
+}
+
+$("scan").addEventListener("click", async () => {
+  const urls = [...new Set($("urls").value.split(/\r?\n/).map(s => s.trim()).filter(Boolean))];
+  if (!urls.length) { $("status").textContent = "Vul eerst websites in."; return; }
+  results = []; $("rows").innerHTML = ""; $("resultcard").hidden = false;
+  $("scan").disabled = true; $("export").disabled = true;
+  const bar = $("bar"); bar.hidden = false; bar.max = urls.length; bar.value = 0;
+  for (let i = 0; i < urls.length; i += 5) {
+    const chunk = urls.slice(i, i + 5);
+    $("status").textContent = `Bezig… ${Math.min(i + chunk.length, urls.length)} / ${urls.length}`;
+    try {
+      const res = await fetch("/api/scan", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({urls: chunk})});
+      if (!res.ok) throw new Error("server " + res.status);
+      (await res.json()).results.forEach(r => { results.push(r); addRow(r); });
+    } catch (err) {
+      chunk.forEach(u => { const r={input:u,url:u,emails:[],pages:0,status:"fout: "+err.message}; results.push(r); addRow(r); });
+    }
+    bar.value = Math.min(i + 5, urls.length);
+  }
+  const hits = results.filter(r => r.emails.length).length;
+  $("status").textContent = `Klaar: e-mail gevonden bij ${hits} van ${results.length} websites`;
+  $("scan").disabled = false; $("export").disabled = !results.length; bar.hidden = true;
+});
+
+$("export").addEventListener("click", () => {
+  const q = s => '"' + String(s).replace(/"/g,'""') + '"';
+  const lines = ["Website,E-mails,Paginas,Status"].concat(results.map(r => [q(r.url||r.input), q(r.emails.join("; ")), r.pages, q(r.status)].join(",")));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n")], {type:"text/csv;charset=utf-8"}));
+  a.download = "emails.csv"; a.click(); URL.revokeObjectURL(a.href);
+});
+</script>
+</body>
+</html>
