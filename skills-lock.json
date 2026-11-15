@@ -1,0 +1,145 @@
+{
+  "version": 2,
+  "skills": {
+    "figma": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/figma/SKILL.md",
+      "computedHash": "0e6398ef34b30dec730d4225a20bdb20e7ed2309ece8abea95949549fe19f3ac",
+      "installMode": "copy"
+    },
+    "hyperframes": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes/SKILL.md",
+      "computedHash": "373b4b19ec8564cbf23f7f3b8399ee9fb4d92609d66948d4b98c13ebe63bbcbc",
+      "installMode": "copy"
+    },
+    "hyperframes-cli": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes-cli/SKILL.md",
+      "computedHash": "864689d1c8b30389bb9dbc04dfd7a61ce8e62d2ba6924334e04a156e074c3029",
+      "installMode": "copy"
+    },
+    "hyperframes-registry": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes-registry/SKILL.md",
+      "computedHash": "6ac664d7d7f2ffdf299136cffb1a9bbebe21fd2b9afa8e6f44cf0c7a2d3df3b6",
+      "installMode": "copy"
+    },
+    "media-use": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/media-use/SKILL.md",
+      "computedHash": "e1f3a9bd0366f1ff0341bd585443f271c8e176a80f295f3cf6d901f9ca87f7fb",
+      "installMode": "copy"
+    },
+    "remotion-to-hyperframes": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-to-hyperframes/SKILL.md",
+      "computedHash": "60d049626b6aef79f650f72d941e6eab7487d8f34bf734a1b92f2b2a6c34b310",
+      "installMode": "copy"
+    },
+    "replica-architect": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-architect/SKILL.md",
+      "computedHash": "b22c7752870e96bd05801f85248f323b53f9c85e7efd010c72699bfa9f0bfa00",
+      "installMode": "copy"
+    },
+    "replica-backend": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-backend/SKILL.md",
+      "computedHash": "c7aaf489062f7eeea7aeb9711ad2a95a48cd20077166cbf8f19a76d4461b5685",
+      "installMode": "copy"
+    },
+    "replica-brand": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-brand/SKILL.md",
+      "computedHash": "a85c9a1640824f6acde7abcb6017701be4604d17fa0ede7895fb6bc90260a8ba",
+      "installMode": "copy"
+    },
+    "replica-build": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-build/SKILL.md",
+      "computedHash": "2e7aa6c6e9c7142c153e86725a4d4d3c93cc96e2807ab011a4c37dffcb558a2d",
+      "installMode": "copy"
+    },
+    "replica-deploy": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-deploy/SKILL.md",
+      "computedHash": "7a54eb7a2edb1ddb8da6bc4c33326f56559b221f7b742a2a5b850168117be8ad",
+      "installMode": "copy"
+    },
+    "replica-design": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-design/SKILL.md",
+      "computedHash": "c0651070059f16cde5b0abb960dea3f987de8ac8bece280baa167afa0addf06d",
+      "installMode": "copy"
+    },
+    "replica-diff": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-diff/SKILL.md",
+      "computedHash": "cbfbf3e32f36c03422f7d361903218637558e5fa738dd400ed98ec30387ab67f",
+      "installMode": "copy"
+    },
+    "replica-entrepreneur": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-entrepreneur/SKILL.md",
+      "computedHash": "ee97952f5e72674cc32d5cd8bb85c307606ab3082d4efa5a3cef5a8751d9dbdd",
+      "installMode": "copy"
+    },
+    "replica-launch": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-launch/SKILL.md",
+      "computedHash": "7e5b403610907db5be579a15e48f0d63ecdbd922ea2c951a58ec84e0b45ef1a6",
+      "installMode": "copy"
+    },
+    "replica-recon": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-recon/SKILL.md",
+      "computedHash": "43368432d335e4185c9f3b36399c8da15762bdc36b71aa875f8bb5d24514f06c",
+      "installMode": "copy"
+    },
+    "replica-test": {
+      "source": "Jakeschincariol/replica-skill",
+      "sourceType": "github",
+      "skillPath": "replica-test/SKILL.md",
+      "computedHash": "7758b962a73793b4ce497a27267b22abd887f7fa695336ffaac13e8e037430ec",
+      "installMode": "copy"
+    },
+    "reverse-any-video": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/reverse-any-video/SKILL.md",
+      "computedHash": "2cefe479a595e0bdaaeae6a23c297992ac133c1dfd49dd64b01b3e28eee591f0",
+      "installMode": "copy"
+    },
+    "slideshow": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/slideshow/SKILL.md",
+      "computedHash": "9e0fe437b47e9edf4f1c6c9aa48b5c1d7c3a1b896d9a83a11934c7aa8e76d345",
+      "installMode": "copy"
+    },
+    "style-sampling": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/style-sampling/SKILL.md",
+      "computedHash": "cb49372a8bfd06f5478802f56febf2d25371fd3401e83957139ecf12e80e490b",
+      "installMode": "copy"
+    }
+  }
+}
