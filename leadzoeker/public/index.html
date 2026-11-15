@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Leadzoeker | Clean Schoonmaakbedrijf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Onest:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0b2a30;
+      --petrol: #0e4a51;
+      --petrol-deep: #093539;
+      --aqua: #25b0a4;
+      --mist: #edf4f3;
+      --surface: #ffffff;
+      --line: #d5e3e1;
+      --muted: #55737a;
+      --lemon: #f3d250;
+      --danger: #b3402e;
+      --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+      --body: "Onest", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--ink);
+      background: var(--mist);
+    }
+    button, input, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: 3px solid var(--lemon); outline-offset: 2px; }
+
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(320px, 440px) 1fr;
+      min-height: 100vh;
+    }
+
+    /* Invoerpaneel */
+    .intake {
+      background: var(--petrol);
+      background-image: radial-gradient(120% 60% at 0% 0%, #14646b 0%, transparent 60%);
+      color: #e9f5f3;
+      padding: 32px 36px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 14px; }
+    .brand strong { font-family: var(--display); font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+    .brand span { color: #a9cfcb; }
+    h1 {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(34px, 3.4vw, 46px);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      margin: 12px 0 0;
+      text-wrap: balance;
+    }
+    .lede { margin: 0; color: #bcdcd8; max-width: 34ch; }
+
+    form { display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 0; }
+    label.field { display: flex; flex-direction: column; gap: 8px; font-weight: 500; flex: 1; min-height: 180px; }
+    textarea {
+      flex: 1;
+      min-height: 160px;
+      resize: vertical;
+      border: 1px solid #2f7279;
+      border-radius: 10px;
+      background: var(--petrol-deep);
+      color: #f2fbfa;
+      padding: 14px 16px;
+      line-height: 1.7;
+      font-weight: 400;
+    }
+    textarea::placeholder { color: #7fa9a7; }
+    .hint { font-size: 14px; color: #a9cfcb; font-weight: 400; }
+
+    .options { display: grid; gap: 12px; margin: 0; padding: 0; border: 0; }
+    .check { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; cursor: pointer; }
+    .check input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--lemon); }
+    .check small { display: block; color: #a9cfcb; font-size: 14px; }
+    .depth { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .depth input {
+      width: 72px; padding: 8px 10px; border-radius: 8px;
+      border: 1px solid #2f7279; background: var(--petrol-deep); color: #f2fbfa;
+    }
+
+    .actions { display: flex; gap: 10px; }
+    .btn {
+      border: 0; border-radius: 10px; padding: 14px 20px; font-weight: 600; cursor: pointer;
+      transition: transform .12s ease, background-color .15s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn[disabled] { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--lemon); color: #2a2405; flex: 1; }
+    .btn-primary:hover:not([disabled]) { background: #f8dd6c; }
+    .btn-ghost { background: transparent; color: inherit; box-shadow: inset 0 0 0 1px currentColor; }
+    .btn-quiet { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); padding: 10px 16px; }
+    .btn-quiet:hover:not([disabled]) { box-shadow: inset 0 0 0 1px var(--petrol); }
+    .form-error { margin: 0; color: #ffd9cf; font-size: 15px; }
+    .form-error:empty { display: none; }
+
+    /* Resultaten */
+    .results { padding: 32px clamp(20px, 4vw, 56px) 56px; min-width: 0; }
+    .results-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; }
+    .tally { margin: 0; font-family: var(--display); font-weight: 500; font-size: clamp(22px, 2.2vw, 30px); letter-spacing: -0.02em; line-height: 1.15; }
+    .tally b { font-weight: 700; }
+    .status { margin: 6px 0 0; color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .toolbar input[type="search"] {
+      padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); width: 250px;
+    }
+
+    .progress { height: 4px; background: var(--line); border-radius: 4px; margin: 22px 0 0; overflow: hidden; }
+    .progress i { display: block; height: 100%; width: 0; background: var(--aqua); transition: width .35s ease; }
+
+    .table-wrap { margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 620px; }
+    th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    th { font-size: 14px; font-weight: 600; color: var(--muted); background: #f7fbfa; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr.new { animation: arrive .6s ease both; }
+    @keyframes arrive { from { opacity: 0; background-color: #fff8d6; } to { opacity: 1; background-color: transparent; } }
+    td.email a { color: var(--petrol); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+    td.email a:hover { text-decoration: underline; }
+    td.site, td.source { color: var(--muted); }
+    .tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 14px; font-weight: 500; white-space: nowrap; }
+    .tag-algemeen { background: #dff3f0; color: #0d5c56; }
+    .tag-persoonlijk { background: #fbefc0; color: #6b5300; }
+    .mx-ok { color: #0d7a52; }
+    .mx-no { color: var(--danger); }
+
+    .empty { padding: 56px 24px; text-align: center; color: var(--muted); }
+    .empty strong { display: block; font-family: var(--display); font-size: 22px; color: var(--ink); margin-bottom: 6px; letter-spacing: -0.01em; }
+
+    details.misses { margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+    details.misses summary { padding: 16px 18px; cursor: pointer; font-weight: 600; }
+    details.misses ul { list-style: none; margin: 0; padding: 0 18px 12px; }
+    details.misses li { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); }
+    details.misses li span:last-child { color: var(--muted); text-align: right; }
+
+    .legal { margin-top: 28px; max-width: 72ch; font-size: 14px; color: var(--muted); }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .intake { position: static; height: auto; padding: 24px 20px 28px; }
+      .results { padding: 28px 16px 48px; }
+      .toolbar input[type="search"] { width: 100%; }
+      .toolbar { width: 100%; }
+    }
+    @media (max-width: 640px) {
+      table { min-width: 0; }
+      thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+      tbody tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+      tbody tr:last-child { border-bottom: 0; }
+      tbody td { padding: 0; border: 0; font-size: 15px; }
+      td.email { grid-column: 1 / -1; font-size: 16px; }
+      td.source { text-align: right; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="intake" aria-label="Zoekopdracht">
+      <div class="brand"><strong>Leadzoeker</strong><span>Clean Schoonmaakbedrijf</span></div>
+      <div>
+        <h1>Vind het juiste postvak bij elk bedrijf</h1>
+      </div>
+      <p class="lede">Plak een lijst met websites. De Leadzoeker leest de contactpagina's en zet de gepubliceerde e-mailadressen voor je op een rij.</p>
+
+      <form id="form" novalidate>
+        <label class="field">
+          Websites
+          <textarea id="sites" name="sites" spellcheck="false" autocomplete="off"
+            placeholder="voorbeeldbedrijf.nl&#10;www.kantoorpand-utrecht.nl&#10;https://tandartspraktijk-zeist.nl"></textarea>
+          <span class="hint" id="count">Eén website per regel, maximaal 200.</span>
+        </label>
+
+        <fieldset class="options">
+          <label class="check">
+            <input type="checkbox" id="genericOnly" checked>
+            <span>Alleen algemene bedrijfsadressen
+              <small>Zoals info@ en administratie@. Adressen op naam van een persoon blijven buiten beeld.</small>
+            </span>
+          </label>
+          <label class="depth">
+            <span>Pagina's per website</span>
+            <input type="number" id="maxPages" min="1" max="10" value="5" inputmode="numeric">
+          </label>
+        </fieldset>
+
+        <p class="form-error" id="formError" role="alert"></p>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit" id="startBtn">Zoek adressen</button>
+          <button class="btn btn-ghost" type="button" id="stopBtn" hidden>Stop</button>
+        </div>
+      </form>
+    </section>
+
+    <main class="results">
+      <div class="results-head">
+        <div>
+          <p class="tally" id="tally">Nog geen zoekopdracht</p>
+          <p class="status" id="status" aria-live="polite">Gevonden adressen verschijnen hier terwijl de zoekopdracht loopt.</p>
+        </div>
+        <div class="toolbar">
+          <input type="search" id="filter" placeholder="Filter op adres of website" aria-label="Filter resultaten">
+          <button class="btn btn-quiet" type="button" id="copyBtn" disabled>Kopieer adressen</button>
+          <button class="btn btn-quiet" type="button" id="csvBtn" disabled>Download CSV</button>
+        </div>
+      </div>
+
+      <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>E-mailadres</th><th>Website</th><th>Soort</th><th>Gevonden op</th><th>Mailserver</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="empty">
+          <strong>Hier komt je lijst</strong>
+          Plak links een paar websites en kies Zoek adressen.
+        </div>
+      </div>
+
+      <details class="misses" id="misses" hidden>
+        <summary id="missesTitle">Websites zonder adres</summary>
+        <ul id="missList"></ul>
+      </details>
+
+      <p class="legal">
+        De Leadzoeker leest alleen openbare pagina's en volgt de crawlregels (robots.txt) van elke website.
+        Voor e-mail met een commercieel doel is in Nederland vooraf toestemming nodig, tenzij het bedrijf het adres
+        zelf voor dat doel heeft gepubliceerd. Vermeld altijd wie je bent en bied een afmeldmogelijkheid.
+        Adressen op naam van een persoon zijn persoonsgegevens en vallen onder de AVG.
+      </p>
+    </main>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      form: $('form'), sites: $('sites'), count: $('count'), genericOnly: $('genericOnly'), maxPages: $('maxPages'),
+      error: $('formError'), start: $('startBtn'), stop: $('stopBtn'), tally: $('tally'), status: $('status'),
+      filter: $('filter'), copy: $('copyBtn'), csv: $('csvBtn'), bar: $('bar'), rows: $('rows'), empty: $('empty'),
+      misses: $('misses'), missesTitle: $('missesTitle'), missList: $('missList'),
+    };
+    const MAX_SITES = 200;
+    const state = { found: [], seen: new Set(), misses: [], total: 0, done: 0, withHit: 0, running: false, controller: null, shown: new Set() };
+
+    const store = {
+      get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+      set(key, value) { try { localStorage.setItem(key, value); } catch { /* opslag is optioneel */ } },
+    };
+
+    const parseSites = () => [...new Set(els.sites.value.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean))];
+    const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+    function updateCount() {
+      const n = parseSites().length;
+      els.count.textContent = n
+        ? `${plural(n, 'website', 'websites')}${n > MAX_SITES ? `, dat zijn er ${n - MAX_SITES} te veel` : ''}`
+        : `Eén website per regel, maximaal ${MAX_SITES}.`;
+      store.set('leadzoeker.sites', els.sites.value);
+    }
+
+    function visibleRows() {
+      const q = els.filter.value.trim().toLowerCase();
+      return q ? state.found.filter((r) => r.email.includes(q) || r.site.includes(q)) : state.found;
+    }
+
+    function cell(className, text) {
+      const td = document.createElement('td');
+      if (className) td.className = className;
+      td.textContent = text;
+      return td;
+    }
+
+    function rowFor(item) {
+      const tr = document.createElement('tr');
+      const email = document.createElement('td');
+      email.className = 'email';
+      const link = document.createElement('a');
+      link.href = `mailto:${item.email}`;
+      link.textContent = item.email;
+      email.append(link);
+
+      const type = document.createElement('td');
+      const tag = document.createElement('span');
+      tag.className = `tag tag-${item.type}`;
+      tag.textContent = item.type === 'algemeen' ? 'Algemeen' : 'Persoonlijk';
+      type.append(tag);
+
+      const mx = item.mx === null ? cell('', 'Niet gecontroleerd')
+        : cell(item.mx ? 'mx-ok' : 'mx-no', item.mx ? 'Ontvangt e-mail' : 'Geen mailserver');
+      tr.append(email, cell('site', item.site), type, cell('source', item.source), mx);
+      return tr;
+    }
+
+    function renderRows() {
+      const list = visibleRows();
+      const fresh = state.shown;
+      els.rows.replaceChildren(...list.map((item) => {
+        const tr = rowFor(item);
+        if (!fresh.has(item.email)) tr.className = 'new';
+        return tr;
+      }));
+      state.shown = new Set(list.map((item) => item.email));
+      els.empty.hidden = list.length > 0;
+      if (!list.length && state.found.length) {
+        els.empty.innerHTML = '<strong>Geen resultaat voor dit filter</strong>Pas het filter aan of maak het leeg.';
+      }
+    }
+
+    function renderSummary() {
+      const n = state.found.length;
+      if (!state.total) return;
+      els.tally.innerHTML = `<b>${plural(n, 'adres', 'adressen')}</b> bij ${state.withHit} van ${plural(state.total, 'website', 'websites')}`;
+      els.bar.style.width = `${Math.round((state.done / state.total) * 100)}%`;
+      els.copy.disabled = els.csv.disabled = n === 0;
+      els.misses.hidden = state.misses.length === 0;
+      els.missesTitle.textContent = `${plural(state.misses.length, 'website', 'websites')} zonder adres`;
+    }
+
+    function addResult(result) {
+      state.done += 1;
+      let added = 0;
+      for (const hit of result.emails) {
+        if (state.seen.has(hit.email)) continue;
+        state.seen.add(hit.email);
+        state.found.push({ ...hit, site: result.site });
+        added += 1;
+      }
+      if (result.emails.length) state.withHit += 1;
+      else {
+        state.misses.push(result);
+        const li = document.createElement('li');
+        const a = document.createElement('span');
+        const b = document.createElement('span');
+        a.textContent = result.site;
+        b.textContent = result.message || 'Geen e-mailadres gepubliceerd';
+        li.append(a, b);
+        els.missList.append(li);
+      }
+      if (added) renderRows();
+      renderSummary();
+      els.status.textContent = `${state.done} van ${state.total} websites doorzocht`;
+    }
+
+    function setRunning(running) {
+      state.running = running;
+      els.start.disabled = running;
+      els.start.textContent = running ? 'Bezig met zoeken' : 'Zoek adressen';
+      els.stop.hidden = !running;
+    }
+
+    async function run(sites) {
+      Object.assign(state, { found: [], seen: new Set(), misses: [], total: sites.length, done: 0, withHit: 0 });
+      els.missList.replaceChildren();
+      els.empty.innerHTML = '<strong>Bezig met zoeken</strong>De eerste adressen verschijnen binnen enkele seconden.';
+      renderRows();
+      renderSummary();
+      els.status.textContent = `0 van ${sites.length} websites doorzocht`;
+      setRunning(true);
+      state.controller = new AbortController();
+      let stopped = false;
+
+      try {
+        const response = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ sites, genericOnly: els.genericOnly.checked, maxPages: Number(els.maxPages.value) || 5 }),
+          signal: state.controller.signal,
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.error || 'De zoekopdracht kon niet starten');
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          for (const line of lines) {
+            if (!line) continue;
+            const event = JSON.parse(line);
+            if (event.type === 'start') { state.total = event.total; renderSummary(); }
+            else if (event.type === 'site') addResult(event.result);
+          }
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') stopped = true;
+        else {
+          els.error.textContent = error instanceof TypeError
+            ? 'Geen verbinding met de Leadzoeker. Start het programma met "npm start" en probeer het opnieuw.'
+            : error.message;
+        }
+      } finally {
+        setRunning(false);
+        const n = state.found.length;
+        els.status.textContent = stopped
+          ? `Gestopt na ${state.done} van ${state.total} websites`
+          : `Klaar. ${state.done} van ${state.total} websites doorzocht`;
+        if (!n) {
+          els.empty.hidden = false;
+          els.empty.innerHTML = '<strong>Geen adressen gevonden</strong>Zet de optie voor algemene adressen uit of verhoog het aantal pagina\'s per website.';
+        }
+      }
+    }
+
+    els.form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (state.running) return;
+      els.error.textContent = '';
+      const sites = parseSites();
+      if (!sites.length) { els.error.textContent = 'Voer minimaal één website in.'; els.sites.focus(); return; }
+      if (sites.length > MAX_SITES) { els.error.textContent = `Je hebt ${sites.length} websites ingevoerd. Het maximum is ${MAX_SITES} per zoekopdracht.`; return; }
+      run(sites);
+    });
+    els.stop.addEventListener('click', () => state.controller?.abort());
+    els.sites.addEventListener('input', updateCount);
+    els.filter.addEventListener('input', renderRows);
+
+    function flash(button, text) {
+      const original = button.dataset.label || (button.dataset.label = button.textContent);
+      button.textContent = text;
+      setTimeout(() => { button.textContent = original; }, 1600);
+    }
+
+    els.copy.addEventListener('click', async () => {
+      const text = visibleRows().map((r) => r.email).join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+        flash(els.copy, 'Gekopieerd');
+      } catch {
+        flash(els.copy, 'Kopiëren lukt niet');
+      }
+    });
+
+    els.csv.addEventListener('click', () => {
+      const quote = (value) => `"${String(value).replace(/"/g, '""')}"`;
+      const lines = [['E-mailadres', 'Website', 'Soort', 'Gevonden op', 'Mailserver']];
+      for (const r of visibleRows()) {
+        lines.push([r.email, r.site, r.type, r.source, r.mx === null ? '' : r.mx ? 'ja' : 'nee']);
+      }
+      // Puntkomma en BOM: zo opent Nederlandstalig Excel het bestand direct goed.
+      const csv = '﻿' + lines.map((line) => line.map(quote).join(';')).join('\r\n');
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      link.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      flash(els.csv, 'Gedownload');
+    });
+
+    const saved = store.get('leadzoeker.sites');
+    if (saved) els.sites.value = saved;
+    updateCount();
+  </script>
+</body>
+</html>
