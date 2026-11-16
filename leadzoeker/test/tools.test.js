@@ -85,3 +85,32 @@ test('LeadStore bewaart, ontdubbelt en behoudt de status', () => {
   assert.deepStrictEqual([reopened[0].status, reopened[0].name, reopened[0].site], ['benaderd', 'Receptie', 'bedrijf.nl']);
   assert.strictEqual(store.remove(['info@bedrijf.nl']), 1);
 });
+
+test('searchCompanies vertaalt zoekwoord en plaats naar bedrijven met website', async () => {
+  const { searchCompanies, buildQuery } = require('../lib/companies');
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, body: init?.body });
+    const json = url.includes('/search')
+      ? [{ display_name: 'Zeist, Utrecht, Nederland', boundingbox: ['52.05', '52.14', '5.18', '5.31'] }]
+      : { elements: [
+        { tags: { name: 'Tandarts Zeist', website: 'https://www.tandartszeist.nl/contact', 'addr:street': 'Slotlaan', 'addr:housenumber': '1', 'addr:city': 'Zeist' } },
+        { tags: { name: 'Dubbel', 'contact:website': 'tandartszeist.nl' } },
+        { tags: { name: 'Zonder site', 'contact:email': 'Info@Praktijk.nl' } },
+        { tags: { name: 'Alleen social', website: 'https://facebook.com/praktijk' } },
+        { tags: { amenity: 'dentist' } },
+      ] };
+    return { ok: true, status: 200, json: async () => json };
+  };
+  const result = await searchCompanies({ keyword: 'Tandartsen', place: 'Zeist' }, { fetchImpl });
+  assert.strictEqual(result.place, 'Zeist');
+  assert.strictEqual(result.known, true);
+  assert.deepStrictEqual(result.companies.map((c) => [c.name, c.website]), [['Tandarts Zeist', 'tandartszeist.nl'], ['Alleen social', ''], ['Zonder site', '']]);
+  assert.strictEqual(result.companies[0].address, 'Slotlaan 1, Zeist');
+  assert.strictEqual(result.companies[2].email, 'info@praktijk.nl');
+  assert.ok(decodeURIComponent(calls[1].body).includes('nwr["amenity"="dentist"](52.05,5.18,52.14,5.31);'));
+  assert.ok(buildQuery('a"b(c', { south: 1, west: 2, north: 3, east: 4 }).includes('"name"~"ab\\(c",i'));
+
+  await assert.rejects(searchCompanies({ keyword: 'tandarts', place: 'Nergenshuizen' }, { fetchImpl: async () => ({ ok: true, status: 200, json: async () => [] }) }), /niet gevonden/);
+  await assert.rejects(searchCompanies({ keyword: 'tandarts', place: 'Nederland' }, { fetchImpl: async () => ({ ok: true, status: 200, json: async () => [{ boundingbox: ['50', '54', '3', '7'] }] }) }), /te groot/);
+});

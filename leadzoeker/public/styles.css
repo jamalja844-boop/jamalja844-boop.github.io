@@ -198,3 +198,13 @@ td select { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line)
   tbody td:empty { display: none; }
   td.wide { grid-column: 1 / -1; }
 }
+
+.finder { display: flex; flex-direction: column; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid #2f7279; }
+.finder .btn { padding: 11px 16px; }
+.finder .panel-note.error { color: #ffd9cf; }
+
+/* De hoofdknop blijft in beeld, ook als het formulier langer is dan het scherm. */
+h1 { font-size: clamp(28px, 2.7vw, 38px); }
+.intake { padding-bottom: 0; gap: 20px; }
+.intake .actions { position: sticky; bottom: 0; padding: 14px 0 28px; background: var(--petrol); margin-top: auto; }
+@media (max-width: 900px) { .intake .actions { position: static; } }

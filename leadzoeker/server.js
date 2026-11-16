@@ -7,6 +7,7 @@ const { scanSite, normalizeSite } = require('./lib/scraper');
 const { verifyEmails } = require('./lib/verifier');
 const { findEmail } = require('./lib/finder');
 const { LeadStore, STATUSES } = require('./lib/store');
+const { searchCompanies, BRANCHES } = require('./lib/companies');
 
 const PORT = Number(process.env.PORT) || 4173;
 const HOST = '127.0.0.1';
@@ -133,6 +134,16 @@ async function handleFind(req, res) {
   }
 }
 
+async function handleCompanies(req, res) {
+  if (req.method === 'GET') return sendJson(res, 200, { keywords: Object.keys(BRANCHES).sort() });
+  const payload = await readJson(req);
+  const result = await searchCompanies(
+    { keyword: String(payload.keyword || '').slice(0, 60), place: String(payload.place || '').slice(0, 80) },
+    TEST_MODE && process.env.LEADZOEKER_MAP_URL ? { nominatim: `${process.env.LEADZOEKER_MAP_URL}/search`, overpass: `${process.env.LEADZOEKER_MAP_URL}/interpreter` } : {},
+  );
+  sendJson(res, 200, result);
+}
+
 async function handleLeads(req, res) {
   if (req.method === 'GET') return sendJson(res, 200, { leads: store.list(), statuses: STATUSES });
   const payload = await readJson(req);
@@ -155,6 +166,8 @@ const ROUTES = {
   'POST /api/scan': handleScan,
   'POST /api/verify': handleVerify,
   'POST /api/find': handleFind,
+  'GET /api/companies': handleCompanies,
+  'POST /api/companies': handleCompanies,
   'GET /api/leads': handleLeads,
   'POST /api/leads': handleLeads,
   'PATCH /api/leads': handleLeads,

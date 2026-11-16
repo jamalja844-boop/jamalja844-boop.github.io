@@ -29,9 +29,9 @@ const VERDICT_LABELS = { geldig: 'Geldig', ongeldig: 'Ongeldig', 'catch-all': 'A
 const MODES = {
   scan: {
     title: 'Vind het juiste postvak bij elk bedrijf',
-    lede: 'Plak een lijst met websites. De Leadzoeker leest de contactpagina\'s en zet de gepubliceerde e-mailadressen voor je op een rij.',
+    lede: 'Zoek bedrijven op zoekwoord en plaats, of plak zelf een lijst websites. De Leadzoeker haalt de gepubliceerde e-mailadressen op.',
     idle: 'Nog geen zoekopdracht',
-    empty: ['Hier komt je lijst', 'Plak links een paar websites en kies Zoek adressen.'],
+    empty: ['Hier komt je lijst', 'Zoek links bedrijven op zoekwoord of plak een paar websites, en kies Zoek adressen.'],
     columns: [
       emailColumn,
       { label: 'Website', cls: 'site', text: (r) => r.site },
@@ -295,6 +295,59 @@ form('scan').addEventListener('submit', (event) => {
     ? `Gestopt na ${state.scan.done} van ${state.scan.total} websites`
     : `Klaar. ${state.scan.done} van ${state.scan.total} websites doorzocht`));
 });
+
+/* ---------- Bedrijven zoeken op zoekwoord ---------- */
+
+async function searchCompanies() {
+  const button = $('companyBtn');
+  const note = $('companyNote');
+  const say = (text, isError = false) => { note.textContent = text; note.classList.toggle('error', isError); };
+  const keyword = $('keyword').value.trim();
+  const place = $('place').value.trim();
+  if (!keyword) { say('Vul een zoekwoord in, bijvoorbeeld tandarts of kantoor.', true); $('keyword').focus(); return; }
+  if (!place) { say('Vul een plaats in, bijvoorbeeld Zeist.', true); $('place').focus(); return; }
+
+  button.disabled = true;
+  button.textContent = 'Bezig met zoeken';
+  say(`Bedrijven zoeken voor "${keyword}" in ${place}`);
+  try {
+    const data = await (await api('POST', '/api/companies', { keyword, place })).json();
+    const existing = lines($('sites').value);
+    const known = new Set(existing.map((s) => s.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase()));
+    const fresh = data.companies.map((c) => c.website).filter((site) => site && !known.has(site));
+    const room = Math.max(MAX_ITEMS - existing.length, 0);
+    const added = fresh.slice(0, room);
+    if (added.length) {
+      $('sites').value = [...existing, ...added].join('\n');
+      $('sites').dispatchEvent(new Event('input'));
+    }
+    const found = plural(data.companies.length, 'bedrijf', 'bedrijven');
+    if (!data.companies.length) {
+      say(data.known ? `Geen bedrijven gevonden voor "${keyword}" in ${data.place}.`
+        : `Geen bedrijven gevonden met "${keyword}" in de naam in ${data.place}. Kies een zoekwoord uit de suggesties voor een hele branche.`, true);
+    } else if (!added.length) {
+      say(fresh.length ? `${found} gevonden in ${data.place}, maar de lijst zit vol (${MAX_ITEMS}).`
+        : `${found} gevonden in ${data.place}. Daarvan staat geen nieuwe website in de kaartgegevens.`);
+    } else {
+      say(`${plural(added.length, 'website', 'websites')} toegevoegd uit ${found} in ${data.place}. Kies nu Zoek adressen.`);
+    }
+    store.set('leadzoeker.keyword', keyword);
+    store.set('leadzoeker.place', place);
+  } catch (error) {
+    say(error.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = button.dataset.label;
+  }
+}
+$('companyBtn').addEventListener('click', searchCompanies);
+for (const id of ['keyword', 'place']) {
+  $(id).value = store.get(`leadzoeker.${id}`) || '';
+  $(id).addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); searchCompanies(); } });
+}
+api('GET', '/api/companies').then((r) => r.json())
+  .then((data) => $('keywordList').replaceChildren(...data.keywords.map((k) => el('option', { value: k }))))
+  .catch(() => { /* suggesties zijn optioneel */ });
 
 /* ---------- Persoon zoeken ---------- */
 

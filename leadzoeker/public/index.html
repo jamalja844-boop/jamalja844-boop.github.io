@@ -28,6 +28,15 @@
       <p class="lede" id="lede"></p>
 
       <form id="form-scan" novalidate>
+        <div class="finder">
+          <div class="row2">
+            <label class="line">Zoekwoord<input id="keyword" list="keywordList" autocomplete="off" placeholder="tandarts"></label>
+            <label class="line">Plaats<input id="place" autocomplete="off" placeholder="Zeist"></label>
+          </div>
+          <datalist id="keywordList"></datalist>
+          <button class="btn btn-ghost" type="button" id="companyBtn" data-label="Zoek bedrijven">Zoek bedrijven</button>
+          <p class="panel-note" id="companyNote" aria-live="polite">Vindt bedrijven met hun website en zet ze in de lijst hieronder.</p>
+        </div>
         <label class="field">
           Websites
           <textarea id="sites" spellcheck="false" autocomplete="off"
