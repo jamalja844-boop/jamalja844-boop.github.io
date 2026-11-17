@@ -11,7 +11,7 @@ const sizes = [
   { name: 'linkedin-banner', W: 1584, H: 396, sx: 380, sy: 24, sw: 1180, sh: 348 },
 ];
 
-const GOLD = '#d6b676';
+const ACCENT = '#6ebeeb';
 
 const html = s => {
   const full = s.sh / s.H > 0.7;
@@ -38,11 +38,11 @@ background:linear-gradient(180deg,rgba(8,22,41,.15),rgba(8,22,41,.35)),url(lux-p
 .col{position:absolute;left:${colLeft}px;top:${s.sy}px;width:${colW}px;height:${s.sh}px;display:flex;flex-direction:column;justify-content:center;
 align-items:${s.mirror ? 'flex-end' : 'flex-start'};padding-${s.mirror ? "right" : "left"}:${s.sw * 0.03}px;text-align:${s.mirror ? 'right' : 'left'}}
 .logo{width:${logoW}px;filter:drop-shadow(0 ${k * 0.6}px ${k * 1.5}px rgba(0,0,0,.35))}
-.rule{width:${k * 16}px;height:${Math.max(2, k * 0.35)}px;background:linear-gradient(90deg,${s.mirror ? 'transparent,' + GOLD : GOLD + ',transparent'});margin:${k * 3.2}px 0 ${k * 2.6}px}
+.rule{width:${k * 16}px;height:${Math.max(2, k * 0.35)}px;background:linear-gradient(90deg,${s.mirror ? 'transparent,' + ACCENT : ACCENT + ',transparent'});margin:${k * 3.2}px 0 ${k * 2.6}px}
 .slogan{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;color:#fff;font-size:${k * 7.6}px;line-height:1.1}
-.svc{color:${GOLD};font-weight:500;font-size:${k * 3.3}px;letter-spacing:${k * 0.55}px;text-transform:uppercase;margin-top:${k * 2.2}px}
+.svc{color:${ACCENT};font-weight:500;font-size:${k * 3.3}px;letter-spacing:${k * 0.55}px;text-transform:uppercase;margin-top:${k * 2.2}px}
 .contact{display:flex;gap:${k * 2.6}px;margin-top:${k * 5}px;align-items:center;white-space:nowrap;font-size:${k * 4.1}px;font-weight:600}
-.pill{color:#0b1a2e;background:linear-gradient(135deg,#ecd7a6,${GOLD} 55%,#b8954f);padding:${k * 1.8}px ${k * 4}px;border-radius:99px;letter-spacing:${k * 0.15}px}
+.pill{color:#0b1a2e;background:#ffffff;padding:${k * 1.8}px ${k * 4}px;border-radius:99px;letter-spacing:${k * 0.15}px}
 .web{color:#e9eef4;font-weight:500;letter-spacing:${k * 0.1}px}
 </style></head><body><div class="photo"></div>
 <div class="col"><img class="logo" src="clean-logo-lux.png"><div class="rule"></div>
