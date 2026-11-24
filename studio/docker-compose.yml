@@ -1,0 +1,37 @@
+services:
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://ads:ads@postgres:5432/ads
+      REDIS_URL: redis://redis:6379
+      APP_URL: http://web:3000
+      STORAGE_DIR: /data
+    ports: ["3000:3000"]
+    volumes: [storage:/data]
+    depends_on: [postgres, redis]
+    restart: unless-stopped
+  worker:
+    build: .
+    command: ["npx", "tsx", "worker/render-worker.ts"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://ads:ads@postgres:5432/ads
+      REDIS_URL: redis://redis:6379
+      # the worker's headless browser fetches media from the web container
+      APP_URL: http://web:3000
+      STORAGE_DIR: /data
+    volumes: [storage:/data]
+    depends_on: [web, postgres, redis]
+    restart: unless-stopped
+  postgres:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: ads, POSTGRES_PASSWORD: ads, POSTGRES_DB: ads }
+    volumes: [pg:/var/lib/postgresql/data]
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+volumes:
+  storage: {}
+  pg: {}

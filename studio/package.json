@@ -1,0 +1,50 @@
+{
+  "name": "ai-video-ads-studio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "worker": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env worker/render-worker.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
+    "smoke": "tsx scripts/smoke-render.ts smoke-out"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0",
+    "@react-three/fiber": "^9.8.2",
+    "@remotion/bundler": "^4.0.547",
+    "@remotion/player": "^4.0.547",
+    "@remotion/renderer": "^4.0.547",
+    "@remotion/three": "^4.0.547",
+    "bullmq": "^6.7.10",
+    "cheerio": "^1.2.0",
+    "fabric": "^6.9.1",
+    "gsap": "^3.15.1",
+    "ioredis": "^6.1.0",
+    "jose": "^6.2.18",
+    "next": "^15.5.29",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.547",
+    "sharp": "^0.35.5",
+    "three": "^0.187.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.7",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.1",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.187.0",
+    "autoprefixer": "^10.7.0",
+    "postcss": "^8.5.33",
+    "tailwindcss": "^3.4.19",
+    "tsx": "^4.23.15",
+    "typescript": "5.9",
+    "vitest": "^5.1.1"
+  }
+}

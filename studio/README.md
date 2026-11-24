@@ -1,0 +1,154 @@
+# AI Video Ads Studio
+
+Turn a product link, image, brand kit product or text prompt into animated video ads — edit them on a
+multitrack timeline and export MP4 (1080p / 4K) for TikTok, Reels, Shorts, YouTube, Instagram and Facebook.
+
+Stack: **Next.js 15 · React 19 · TypeScript · Tailwind · Remotion (rendering) · FFmpeg · GSAP (easing) ·
+Three.js (3D) · Fabric.js (canvas interaction) · PostgreSQL/Supabase · Redis + BullMQ · Docker**.
+
+---
+
+## Quick start (local)
+
+Requirements: Node 22+, `ffmpeg`/`ffprobe` on PATH.
+
+```bash
+cd studio
+npm install
+cp .env.example .env.local        # then fill ENCRYPTION_KEY and SESSION_SECRET (see below)
+npm run build && npm start        # web app on http://localhost:3000
+npm run worker                    # second terminal: render worker (MP4 export)
+```
+
+Generate the two required secrets:
+
+```bash
+node -e "console.log('ENCRYPTION_KEY='+require('crypto').randomBytes(32).toString('hex'))"
+node -e "console.log('SESSION_SECRET='+require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Open http://localhost:3000, create an account, then:
+
+1. **AI Settings** → add the providers you want (optional — without any key the template engine writes the copy).
+2. **Create New Ad** → paste a product URL (or upload images / pick a brand-kit product / write a prompt),
+   choose styles, variants, duration, formats, language, voice-over → **Generate ads**.
+3. Watch the AI team work, preview the variants with their analysis score, **Open in editor**.
+4. Edit on the canvas and timeline → **Export MP4** → download from **Render Queue** or **Export Center**.
+
+Without `DATABASE_URL` / `REDIS_URL` the app stores data in `./storage` (JSON files + media files) and the
+worker polls for renders. That is fine for a single machine. For production use PostgreSQL + Redis.
+
+## Production (Docker)
+
+```bash
+cd studio
+cp .env.example .env   # set ENCRYPTION_KEY, SESSION_SECRET (and optionally Supabase storage)
+docker compose up -d --build
+```
+
+This starts `web`, `worker` (Remotion + FFmpeg), `postgres` and `redis`. Media and renders live in the
+`storage` volume, or in a private Supabase Storage bucket when `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
+are set. To use **Supabase Postgres**, set `DATABASE_URL` to the Supabase connection string and run
+`npm run db:migrate` once (the schema is also created automatically on first start).
+
+## Configuration
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `ENCRYPTION_KEY` | yes (prod) | 32-byte key; provider API keys are encrypted with AES-256-GCM |
+| `SESSION_SECRET` | yes (prod) | signs session cookies and expiring media URLs for the renderer |
+| `APP_URL` | yes | public base URL; the render worker loads media from it |
+| `DATABASE_URL` | no | PostgreSQL / Supabase. Default: JSON store in `./storage/db` |
+| `REDIS_URL` | no | BullMQ render queue. Default: worker polls the database |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET` | no | private file storage in Supabase |
+| `REMOTION_BROWSER_EXECUTABLE` | no | use an existing Chromium instead of Remotion's download |
+| `REMOTION_GL` | no | WebGL backend for 3D layers (`angle`, `swangle` for CPU-only servers) |
+| `NODE_USE_ENV_PROXY` | no | set to `1` when outbound traffic must go through `HTTPS_PROXY` |
+
+## AI providers (AI Settings)
+
+Each provider has its own API key fields (stored encrypted, never sent back to the browser), model
+settings, your own cost-per-unit values (used for the cost estimate shown per generation), a
+**Test connection** button that calls the provider's real API (and lists your models / voices), and links to
+the official docs and pricing.
+
+| Provider | Used for | API |
+|---|---|---|
+| Anthropic Claude | agents (copy, script, strategy) | Messages API with structured JSON output |
+| OpenAI | agents, TTS, AI product photos | Chat Completions, Audio Speech, Images Edits |
+| Google Gemini | agents, **Google Veo** video | `generateContent`, `predictLongRunning` |
+| xAI Grok | agents | OpenAI-compatible Chat Completions |
+| ElevenLabs | voice-over with exact word timestamps | `text-to-speech/{voice}/with-timestamps` |
+| Google Cloud TTS | voice-over with exact word timing | `text:synthesize` + SSML marks |
+| Runway | image-to-video | `/v1/image_to_video` + `/v1/tasks` |
+| Kling AI | image/text-to-video | `/v1/videos/*` with JWT auth |
+| Higgsfield | — | **not integrated**: no verified public API in this build; shown as unavailable |
+| Shopify | product catalogue import | Admin GraphQL API (`read_products`) |
+| WooCommerce | product catalogue import | REST API v3 (consumer key/secret) |
+
+Subtitle sync: ElevenLabs and Google return real word timings (`exact`). OpenAI TTS has no timestamps, so
+words are distributed over the measured audio length; the UI labels these subtitles `estimated`.
+
+## How generation works (the AI team)
+
+| Agent | What it does | Engine |
+|---|---|---|
+| Brand Designer | reads the page / brand kit: colours (theme-color, CSS variables, product image), fonts | code |
+| Product Photographer | imports images you have rights to, ranks them, optional studio composition (local) or AI scene (OpenAI) | code / AI |
+| Marketing Specialist | audience, pain points, USPs, angles | AI or rule-based |
+| Creative Director | different concept + hook per variant | AI or rule-based |
+| Copywriter | hook, headline, benefits, CTA (no invented claims, prices or reviews) | AI or rule-based |
+| Script Writer | scene-by-scene on-screen text + voice-over within the word budget | AI or rule-based |
+| Voice-over Specialist | TTS per scene, word timings for subtitles | AI (TTS) |
+| Motion Designer | deterministic layout & animation engine → editable timeline | code |
+| Video Editor | transitions, captions, music ducking, one project per format | code |
+| Advertisement Analyst | checks hook timing, CTA, contrast (WCAG), reading speed, safe zones, product visibility | rules |
+
+Every step shows which engine produced it. Without an LLM key the template engine is used and labelled as such.
+
+Website import respects `robots.txt`, blocks private/internal addresses (SSRF protection), limits sizes and
+time, and asks you to confirm usage rights before images, logos and music are imported. Shopify and
+WooCommerce stores are read via their public product JSON / Store API when available.
+
+## Editor
+
+- **Left**: media library, text presets (kinetic/typewriter/word-by-word), elements (shapes, phone mockup,
+  3D product, logo reveal, backgrounds), illustrations, particles, transitions, music, style templates,
+  brand kits, AI (voice-over + subtitles, analysis).
+- **Center**: real-time Remotion preview; Fabric.js handles select/drag/scale/rotate; double-click text to edit inline.
+- **Right**: position/size/alignment, rotation/scale/opacity/blend, all layer properties (colours, fonts…),
+  in/out animations (16 presets, GSAP easings with curve preview, spring physics), loops (float, pulse,
+  Ken Burns, parallax…), keyframes per property with easing, shadow.
+- **Bottom**: multitrack timeline with snapping, move between tracks, trim, split (`S`), duplicate (`Ctrl+D`),
+  delete, scene strip, keyframe markers, audio waveforms, hide/lock/mute tracks.
+- Undo/redo (`Ctrl+Z` / `Ctrl+Shift+Z`), autosave, version history with restore, copy to another
+  aspect ratio, save as template, export 1080p / 4K.
+
+## Render pipeline
+
+`POST /api/renders` snapshots the project and queues it. The worker bundles the Remotion composition, renders
+frames in headless Chromium and encodes H.264/AAC MP4 (`yuv420p`, CRF 18). Media is fetched through signed,
+expiring URLs. Failed renders are retried automatically (3 attempts); renders interrupted by a worker crash are
+put back in the queue; you can retry or cancel from the Render Queue.
+
+## Security notes
+
+- Passwords: scrypt. Sessions: HttpOnly, SameSite=Lax JWT cookies. Mutating API calls must be same-origin.
+- Provider and store credentials: AES-256-GCM at rest, server-side only.
+- Media is private per user; the renderer uses HMAC-signed URLs that expire.
+- Uploads are type-checked by decoding (images) and size-limited; outbound fetches are SSRF-protected.
+- Rate limits on login, registration, scraping and generation.
+
+## Tests
+
+```bash
+npm test          # unit tests: crypto, SSRF guard, scraper (fixtures), timeline builder for all styles × formats × durations
+npm run typecheck
+npm run smoke     # renders stills + MP4 for every ad style (needs Chromium; set REMOTION_BROWSER_EXECUTABLE if needed)
+```
+
+## Licensing
+
+Remotion is free for individuals and companies of up to 3 people; larger companies need a
+[Remotion company license](https://www.remotion.dev/license). Only use images, music, logos and footage you
+own or are licensed to use; generated AI content is subject to each provider's terms.

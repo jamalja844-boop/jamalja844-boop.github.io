@@ -1,0 +1,10 @@
+node_modules
+.next
+storage
+.remotion-bundle
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+storage-test
+smoke-out

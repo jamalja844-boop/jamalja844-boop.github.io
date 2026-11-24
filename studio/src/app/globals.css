@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body { background: #0b0d12; color: #e7e9ee; }
+body { font-family: Inter, system-ui, sans-serif; }
+* { scrollbar-width: thin; scrollbar-color: #2b3040 transparent; }
+input, select, textarea { color-scheme: dark; }
+.btn { @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed; }
+.btn-primary { @apply btn bg-accent text-white hover:bg-violet-500; }
+.btn-ghost { @apply btn bg-panel2 text-gray-200 hover:bg-line border border-line; }
+.btn-danger { @apply btn bg-red-600/90 text-white hover:bg-red-600; }
+.btn-xs { @apply px-2 py-1 text-xs; }
+.input { @apply w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-accent; }
+.label { @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted; }
+.card { @apply rounded-xl border border-line bg-panel p-4; }
+.chip { @apply inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-xs; }
+.chip-on { @apply border-accent bg-accent/20 text-white; }
