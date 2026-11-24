@@ -11,6 +11,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "dev": "npm run dev -w @workstudio/web",
     "build": "npm run build -w @workstudio/web",
     "start": "npm run start -w @workstudio/web",

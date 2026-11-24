@@ -36,6 +36,32 @@ ai-workstudio-pro/
 
 ## Installatie
 
+### Snelste weg (Windows, macOS, Linux)
+
+Je hebt nodig: **Node.js 22+**, **Git** en **Docker Desktop** (gestart). De database draait automatisch in Docker; PostgreSQL apart installeren is niet nodig.
+
+> **Windows:** typ de opdrachten in **PowerShell** (Start → typ *PowerShell*), **niet** in het venster *Node.js*. Dat venster begrijpt alleen JavaScript en geeft fouten als `Unexpected identifier 'clone'`.
+
+```powershell
+git clone -b claude/ai-engineering-studio-idshob https://github.com/jamalja844-boop/jamalja844-boop.github.io.git
+cd jamalja844-boop.github.io\ai-workstudio-pro
+npm install
+npm run setup
+npm run dev
+```
+
+Open daarna **http://localhost:3000** en maak het beheerdersaccount aan.
+
+`npm run setup` controleert Node.js en Docker, start PostgreSQL + pgvector in de container `workstudio-db` (poort 5433), maakt `apps/web/.env` met een willekeurige encryptiesleutel (een bestaand bestand wordt nooit overschreven), haalt het sandbox-image voor AI Code op en voert de migraties uit. Je kunt het veilig opnieuw draaien. Volgende keer starten: Docker Desktop openen en `npm run dev`.
+
+Problemen:
+- *`git` wordt niet herkend* → installeer Git: https://git-scm.com/download/win en open PowerShell opnieuw.
+- *`npm` wordt niet herkend* → installeer Node.js (LTS): https://nodejs.org en open PowerShell opnieuw.
+- *Docker draait niet* → start Docker Desktop en wacht tot het "Engine running" meldt.
+- *Poort 3000 in gebruik* → sluit het andere programma of start met `npm run dev -w @workstudio/web -- -p 3001`.
+
+### Handmatig (eigen PostgreSQL)
+
 Vereisten: **Node.js 22+**, **PostgreSQL 15/16 met pgvector**, **Docker** (voor AI Code-commando's en -taken), **git**.
 
 ```bash
@@ -47,16 +73,10 @@ docker pull node:22-alpine                    # sandbox-image voor AI Code
 npm run dev                                   # web (http://localhost:3000) + job-worker
 ```
 
-Open http://localhost:3000 → **Installatie** maakt het eerste beheerdersaccount en je workspace aan. Optioneel de Clean-, NobleNest- en demo-workspaces:
+Optioneel de Clean-, NobleNest- en demo-workspaces:
 
 ```bash
 SEED_ADMIN_EMAIL=… SEED_ADMIN_PASSWORD=… npm run db:seed
-```
-
-PostgreSQL + pgvector via Docker:
-
-```bash
-docker run -d --name ai-studio-db -p 5432:5432 -e POSTGRES_USER=studio -e POSTGRES_PASSWORD=studio -e POSTGRES_DB=ai_studio pgvector/pgvector:pg16
 ```
 
 **Docker-image niet bereikbaar (rate limit van Docker Hub)?** Haal het via een mirror en tag het:
@@ -101,6 +121,7 @@ Cowork → Taakplanner → *Nieuwe taak*: kies een opdracht (bijv. `/create nieu
 
 | Script | Doel |
 |---|---|
+| `npm run setup` | Eenmalige installatie: database in Docker, `.env`, sandbox-image, migraties |
 | `npm run dev` | Webserver + worker (ontwikkeling) |
 | `npm run build` / `npm run start` | Productiebuild / starten |
 | `npm run worker` | Job-worker |
