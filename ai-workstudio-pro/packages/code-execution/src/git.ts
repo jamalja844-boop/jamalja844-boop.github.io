@@ -14,12 +14,22 @@ const SAFE = [
   "-c", "user.email=ai@workstudio.local",
 ];
 
-export function git(dir: string, args: string[], timeoutMs = 30_000): Promise<{ code: number; stdout: string; stderr: string }> {
+/**
+ * Inloggegevens voor git via omgevingsvariabelen (GIT_CONFIG_COUNT): het token staat dan niet in de
+ * opdrachtregel, niet in de URL en niet in .git/config, en geldt alleen voor de opgegeven host.
+ */
+export function authEnv(token: string, host = "github.com"): Record<string, string> {
+  if (!/^[\w.-]+$/.test(host)) throw new GitError("Ongeldige host");
+  const basic = Buffer.from(`x-access-token:${token}`).toString("base64");
+  return { GIT_CONFIG_COUNT: "1", GIT_CONFIG_KEY_0: `http.https://${host}/.extraheader`, GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}` };
+}
+
+export function git(dir: string, args: string[], timeoutMs = 30_000, extraEnv: Record<string, string> = {}): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     execFile(
       "git",
       [...SAFE, ...args],
-      { cwd: dir, timeout: timeoutMs, maxBuffer: 20_000_000, env: { PATH: process.env.PATH ?? "/usr/bin:/bin", GIT_TERMINAL_PROMPT: "0", HOME: process.env.HOME ?? "/tmp", LANG: "C.UTF-8" } as unknown as NodeJS.ProcessEnv },
+      { cwd: dir, timeout: timeoutMs, maxBuffer: 20_000_000, env: { PATH: process.env.PATH ?? "/usr/bin:/bin", GIT_TERMINAL_PROMPT: "0", HOME: process.env.HOME ?? "/tmp", LANG: "C.UTF-8", ...extraEnv } as unknown as NodeJS.ProcessEnv },
       (err, stdout, stderr) => resolve({ code: err ? 1 : 0, stdout: String(stdout), stderr: String(stderr) }),
     );
   });
@@ -106,7 +116,7 @@ export async function log(dir: string, limit = 20) {
 }
 
 /** Kloont een openbare https-repository van een toegestane host (ondiep, zonder hooks). */
-export async function cloneRepo(url: string, dir: string, opts: { branch?: string; allowedHosts: string[] }) {
+export async function cloneRepo(url: string, dir: string, opts: { branch?: string; allowedHosts: string[]; auth?: Record<string, string> }) {
   let u: URL;
   try {
     u = new URL(url);
@@ -118,6 +128,31 @@ export async function cloneRepo(url: string, dir: string, opts: { branch?: strin
   if (!opts.allowedHosts.includes(u.hostname.toLowerCase())) throw new GitError(`Host ${u.hostname} staat niet op de lijst met toegestane Git-hosts`);
   if (opts.branch && (!BRANCH_RE.test(opts.branch) || opts.branch.startsWith("-"))) throw new GitError("Ongeldige branchnaam");
   const args = ["clone", "--depth", "1", "--single-branch", "--no-tags", ...(opts.branch ? ["--branch", opts.branch] : []), "--", u.toString(), dir];
-  const r = await git(process.cwd(), args, 180_000);
-  if (r.code !== 0) throw new GitError(r.stderr.trim().split("\n").slice(-2).join(" ") || "Klonen mislukt");
+  const r = await git(process.cwd(), args, 180_000, opts.auth ?? {});
+  if (r.code !== 0) throw new GitError(scrub(r.stderr).trim().split("\n").slice(-2).join(" ") || "Klonen mislukt");
+}
+
+/** Verwijdert eventuele tokens uit foutmeldingen van git. */
+function scrub(s: string) {
+  return s.replace(/(basic|bearer|token)\s+[A-Za-z0-9+/=_-]{8,}/gi, "$1 ***").replace(/gh[pousr]_[A-Za-z0-9]{10,}/g, "***");
+}
+
+export async function currentBranch(dir: string) {
+  return (await must(dir, ["rev-parse", "--abbrev-ref", "HEAD"])).trim();
+}
+
+export async function remoteUrl(dir: string, remote = "origin") {
+  const r = await git(dir, ["remote", "get-url", remote]);
+  return r.code === 0 ? r.stdout.trim() : null;
+}
+
+/**
+ * Pusht een branch naar de remote. `testAllowFile` is uitsluitend voor tests met een lokale bare repository.
+ */
+export async function pushBranch(dir: string, branch: string, opts: { auth?: Record<string, string>; remote?: string; testAllowFile?: boolean } = {}) {
+  if (!BRANCH_RE.test(branch) || branch.startsWith("-")) throw new GitError("Ongeldige branchnaam");
+  const extra = opts.testAllowFile ? ["-c", "protocol.file.allow=always"] : [];
+  const r = await git(dir, [...extra, "push", "--porcelain", "--set-upstream", opts.remote ?? "origin", `refs/heads/${branch}:refs/heads/${branch}`], 120_000, opts.auth ?? {});
+  if (r.code !== 0) throw new GitError(scrub(r.stderr).trim().split("\n").slice(-3).join(" ") || "Pushen mislukt");
+  return scrub(r.stdout).trim();
 }

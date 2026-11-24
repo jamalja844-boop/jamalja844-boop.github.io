@@ -39,7 +39,7 @@ Keuze: packages worden als TypeScript-bron gedeeld (`transpilePackages`), zonder
 | Fase | Inhoud | Status |
 |---|---|---|
 | **1** | Monorepo, rebranding, **AI Chat** met echte slash-opdrachten, **Schrijfstudio** (stijlen, persoonlijke instructies, documenten met versies, goedkeuren, export), **AI Code** (projecten uit sjabloon/Git, editor, sandbox-terminal, Git-status/diff/branch/commit, AI-codetaken met plan, stappen, toestemming en diff), tests | **Gereed** |
-| 2 | GitHub OAuth (privérepo's, push, pull requests), branch-per-taak, testresultaten in PR | Gepland |
+| 2 | GitHub OAuth (privé-repository's, push, pull requests), branch per taak | **Gereed** |
 | 3 | Cowork: bijlagen in AI Chat, DOCX/PDF/XLSX-generatie (document-engine), `/excel`, taakplanner | **Gereed** |
 | 4 | Integration Manager + MCP-beheer per workspace (bestaande MCP-tool uitbreiden), e-mailverzending na goedkeuring | Gepland |
 | 5 | Chrome-extensie MV3 (side panel, contextmenu, actieve tab, native messaging) | Gepland |

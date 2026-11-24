@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Boxes, FolderGit2, GitBranch, Plus, ServerCog, ShieldCheck, Trash2 } from "lucide-react";
+import { Boxes, FolderGit2, GitBranch, GitPullRequest, Plus, ServerCog, ShieldCheck, Trash2, Unplug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Alert, Badge, EmptyState } from "@/components/ui/misc";
@@ -27,6 +27,9 @@ export interface ProjectSummary {
   last_task_status: string | null;
 }
 
+interface GithubStatus { configured: boolean; connected: { login: string; scopes: string; connectedAt: string } | null }
+interface GhRepo { full_name: string; private: boolean; default_branch: string; description: string | null; updated_at: string; permissions?: { push?: boolean } }
+
 export interface SandboxInfo {
   available: boolean;
   reason?: string | null;
@@ -38,12 +41,57 @@ export function ProjectsOverview({ slug, initialProjects, sandbox, canManage, al
   const [projects, setProjects] = useState(initialProjects);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", source: "template" as "template" | "git", template: "node-starter" as "node-starter" | "empty", url: "", branch: "" });
+  const [form, setForm] = useState({ name: "", description: "", source: "template" as "template" | "git" | "github", template: "node-starter" as "node-starter" | "empty", url: "", branch: "", repo: "" });
+  const search = useSearchParams();
+  const [gh, setGh] = useState<GithubStatus | null>(null);
+  const [repos, setRepos] = useState<GhRepo[] | null>(null);
+  const [repoFilter, setRepoFilter] = useState("");
+
+  const loadGh = useCallback(async () => {
+    try {
+      setGh(await api.get<GithubStatus>(`/api/w/${slug}/integrations/github`));
+    } catch {
+      setGh({ configured: false, connected: null });
+    }
+  }, [slug]);
+  useEffect(() => {
+    loadGh();
+    const ok = search.get("github");
+    const err = search.get("github_error");
+    if (ok) toast.success(`GitHub gekoppeld als @${ok}`);
+    if (err) toast.error(`GitHub: ${err}`);
+    if (ok || err) router.replace(`/w/${slug}/code`, { scroll: false });
+  }, [loadGh, search, router, slug]);
+
+  async function loadRepos() {
+    try {
+      setRepos((await api.get<{ repos: GhRepo[] }>(`/api/w/${slug}/integrations/github/repos`)).repos);
+    } catch (e) {
+      toast.error(e instanceof ClientApiError ? e.message : "Repository's laden mislukt");
+      setRepos([]);
+    }
+  }
+
+  async function disconnect() {
+    if (!confirm("GitHub ontkoppelen? Het token wordt verwijderd en de toestemming bij GitHub ingetrokken.")) return;
+    try {
+      await api.del(`/api/w/${slug}/integrations/github`);
+      toast.success("GitHub ontkoppeld");
+      setRepos(null);
+      await loadGh();
+    } catch (e) {
+      toast.error(e instanceof ClientApiError ? e.message : "Ontkoppelen mislukt");
+    }
+  }
 
   async function create() {
     setBusy(true);
     try {
-      const source = form.source === "template" ? { type: "template", template: form.template } : { type: "git", url: form.url.trim(), branch: form.branch.trim() || undefined };
+      const source = form.source === "template"
+        ? { type: "template", template: form.template }
+        : form.source === "github"
+          ? { type: "github", repo: form.repo, branch: form.branch.trim() || undefined }
+          : { type: "git", url: form.url.trim(), branch: form.branch.trim() || undefined };
       const r = await api.post<{ id: string }>(`/api/w/${slug}/code/projects`, { name: form.name.trim(), description: form.description.trim(), source });
       toast.success("Project aangemaakt");
       setOpen(false);
@@ -95,6 +143,21 @@ export function ProjectsOverview({ slug, initialProjects, sandbox, canManage, al
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-4" data-testid="github-card">
+        <GitPullRequest className="size-5 text-brand-sky-strong dark:text-brand-sky" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">GitHub</p>
+          <p className="text-xs text-muted-foreground">
+            {!gh ? "Status laden…" : !gh.configured
+              ? "Nog niet ingesteld op de server: GITHUB_CLIENT_ID en GITHUB_CLIENT_SECRET ontbreken in .env (GitHub → Developer settings → OAuth Apps)."
+              : gh.connected ? `Gekoppeld als @${gh.connected.login} – privé-repository's klonen, pushen en pull requests (altijd na jouw bevestiging).`
+                : "Koppel je eigen GitHub-account om privé-repository's te openen, te pushen en pull requests te maken."}
+          </p>
+        </div>
+        {gh?.configured && !gh.connected && <Button asChild variant="accent" size="sm"><a href={`/api/w/${slug}/integrations/github/start`}><GitPullRequest /> GitHub koppelen</a></Button>}
+        {gh?.connected && <Button variant="ghost" size="sm" onClick={disconnect}><Unplug /> Ontkoppelen</Button>}
+      </div>
+
       {!sandbox.available && (
         <Alert tone="warning" title="Commando's en AI Code-taken kunnen nog niet draaien">
           {sandbox.reason} Installeer Docker op de server en zorg dat de webserver/worker het image <code>node:22-alpine</code> (of SANDBOX_IMAGE) kan gebruiken. Bestanden bekijken en bewerken werkt wel.
@@ -140,9 +203,14 @@ export function ProjectsOverview({ slug, initialProjects, sandbox, canManage, al
             <Field label="Naam" htmlFor="p-name"><Input id="p-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={80} placeholder="Offertecalculator" /></Field>
             <Field label="Omschrijving" htmlFor="p-desc"><Textarea id="p-desc" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={500} /></Field>
             <Field label="Bron" htmlFor="p-source">
-              <Select id="p-source" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value as "template" | "git" })}>
+              <Select id="p-source" value={form.source} onChange={(e) => {
+                const v = e.target.value as "template" | "git" | "github";
+                setForm({ ...form, source: v });
+                if (v === "github" && repos === null) loadRepos();
+              }}>
                 <option value="template">Sjabloon</option>
                 <option value="git">Openbare Git-repository (https)</option>
+                <option value="github" disabled={!gh?.connected}>Mijn GitHub-repository&apos;s{gh?.connected ? " (ook privé)" : " – koppel eerst GitHub"}</option>
               </Select>
             </Field>
             {form.source === "template" ? (
@@ -152,9 +220,27 @@ export function ProjectsOverview({ slug, initialProjects, sandbox, canManage, al
                   <option value="empty">Leeg project</option>
                 </Select>
               </Field>
+            ) : form.source === "github" ? (
+              <>
+                <Field label="Repository" htmlFor="p-repo" hint="Gekloond met jouw token; het token komt niet in de projectmap.">
+                  <div className="grid gap-2">
+                    <Input value={repoFilter} onChange={(e) => setRepoFilter(e.target.value)} placeholder="Zoeken…" aria-label="Zoek repository" />
+                    <Select id="p-repo" value={form.repo} required onChange={(e) => {
+                      const r = repos?.find((x) => x.full_name === e.target.value);
+                      setForm({ ...form, repo: e.target.value, name: form.name || (r?.full_name.split("/")[1] ?? ""), branch: r?.default_branch ?? "" });
+                    }}>
+                      <option value="">{repos === null ? "Laden…" : repos.length ? "Kies een repository" : "Geen repository's gevonden"}</option>
+                      {(repos ?? []).filter((r) => r.full_name.toLowerCase().includes(repoFilter.toLowerCase())).map((r) => (
+                        <option key={r.full_name} value={r.full_name}>{r.private ? "🔒 " : ""}{r.full_name}{r.permissions?.push ? "" : " (alleen lezen)"}</option>
+                      ))}
+                    </Select>
+                  </div>
+                </Field>
+                <Field label="Branch" htmlFor="p-branch"><Input id="p-branch" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} placeholder="main" /></Field>
+              </>
             ) : (
               <>
-                <Field label="Repository-URL" htmlFor="p-url" hint={`Alleen https en toegestane hosts: ${allowedHosts.join(", ")}. Privérepositories volgen met de GitHub-koppeling.`}>
+                <Field label="Repository-URL" htmlFor="p-url" hint={`Alleen https en toegestane hosts: ${allowedHosts.join(", ")}. Voor privé-repository's: kies "Mijn GitHub-repository's".`}>
                   <Input id="p-url" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} required placeholder="https://github.com/organisatie/repository" />
                 </Field>
                 <Field label="Branch (optioneel)" htmlFor="p-branch"><Input id="p-branch" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} placeholder="main" /></Field>

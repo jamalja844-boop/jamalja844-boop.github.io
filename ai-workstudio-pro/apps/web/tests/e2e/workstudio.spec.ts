@@ -87,6 +87,9 @@ test("B. project openen, npm test in de sandbox en een AI Code-taak met diff", a
   test.skip(!sandbox.available, `Docker-sandbox niet beschikbaar: ${sandbox.reason}`);
 
   await page.goto(`/w/${slug}/code`);
+  // Zonder OAuth-app op de server meldt de GitHub-kaart eerlijk wat ontbreekt (geen nepknop).
+  await expect(page.getByTestId("github-card")).toContainText("GITHUB_CLIENT_ID");
+  await expect(page.getByTestId("github-card").getByRole("link", { name: /GitHub koppelen/ })).toHaveCount(0);
   await page.getByTestId("new-project").click();
   await page.getByLabel("Naam").fill("E2E Offertecalculator");
   await page.getByTestId("create-project").click();

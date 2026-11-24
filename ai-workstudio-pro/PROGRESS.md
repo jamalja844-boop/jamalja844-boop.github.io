@@ -4,12 +4,12 @@ Laatst bijgewerkt: 24 november 2026 · Plan: [docs/IMPLEMENTATIEPLAN.md](docs/IM
 
 ## Samenvatting
 
-**Fase 1 en fase 3 (Cowork) zijn gereed en getest.** Fase 3 voegt toe: bijlagen in AI Chat (PDF, Word, Excel, CSV, tekst), Word-/PDF-/Excel-export, de opdracht `/excel` en een taakplanner die op vaste momenten concepten klaarzet.
+**Fase 1, fase 2 (GitHub) en fase 3 (Cowork) zijn gereed en getest.** Fase 2 voegt een persoonlijke GitHub-koppeling toe: privé-repository's openen in AI Code, AI-taken op een eigen branch, pushen en pull requests – altijd na bevestiging. Fase 3 voegt toe: bijlagen in AI Chat (PDF, Word, Excel, CSV, tekst), Word-/PDF-/Excel-export, de opdracht `/excel` en een taakplanner die op vaste momenten concepten klaarzet.
 
 **Fase 1:** De verplichte eerste route werkt end-to-end in een productiebuild:
 inloggen → AI Chat → schrijfopdracht (`/email`) → opslaan als document → goedkeuren → project openen → `npm test` in de sandbox → AI Code-taak → resultaten (stappen, gewijzigde bestanden, diff).
 
-Tests: **122 automatische tests groen** – 109 unit/integratie (Vitest, echte PostgreSQL en Docker) en 13 end-to-end (Playwright, productiebuild).
+Tests: **130 automatische tests groen** – 117 unit/integratie (Vitest, echte PostgreSQL en Docker) en 13 end-to-end (Playwright, productiebuild).
 
 ## Afgerond
 
@@ -43,6 +43,14 @@ Tests: **122 automatische tests groen** – 109 unit/integratie (Vitest, echte P
 - [x] AI Code-taken: plan → bestanden lezen/wijzigen → testen in sandbox → diff en samenvatting; pauze + goedkeuring voor installaties; annuleren; limieten op stappen en tijd; alle stappen en commando's gelogd
 - [x] Projecten en taken strikt gescheiden per organisatie (RLS + UUID-paden)
 
+### GitHub (fase 2)
+- [x] Persoonlijke OAuth-koppeling per gebruiker en workspace (state-cookie, eenmalige code); token AES-256-GCM-versleuteld, gebonden aan organisatie + gebruiker, onzichtbaar voor collega's en beheerders (RLS); ontkoppelen trekt de toestemming bij GitHub in
+- [x] Nieuw project uit eigen GitHub-repository's (ook privé); klonen met het token via omgevingsvariabelen – nooit in URL, opdrachtregel, `.git/config` of sandbox; tokens worden uit foutmeldingen gefilterd
+- [x] AI Code-taak optioneel op een nieuwe branch `ai/…`
+- [x] Pushen en pull request (standaard concept-PR) vanuit het Git-tabblad: alleen met bevestiging, geweigerd bij niet-gecommitte wijzigingen, extra bevestiging voor de hoofdbranch, controle dat de remote bij de gekoppelde repository hoort, auditlog
+- [x] Migratie `0008_github.sql`; zonder `GITHUB_CLIENT_ID/SECRET` meldt de app precies wat er ontbreekt
+- [x] Tests: OAuth-afhandeling, privacy van het token, foutafhandeling, repository-lijst en pull request (met nagebootste GitHub-API), echte push naar een lokale Git-repository zonder token in `.git/config`, alle weigerregels
+
 ### Cowork (fase 3)
 - [x] `packages/document-engine`: Markdown → Word (.docx) en PDF (A4, koptekst met bedrijfsnaam, paginanummers, tabellen), tabellen → Excel (opgemaakte kopregel, filters, Nederlandse getalnotatie), Excel inlezen
 - [x] Bijlagen in AI Chat via paperclip of slepen: PDF, Word, Excel, CSV, TXT, Markdown, JSON, HTML; controle op type en inhoud; alleen de tekst wordt bewaard (privé); verdachte instructies in bestanden worden gemarkeerd en als data behandeld
@@ -65,7 +73,6 @@ Tests: **122 automatische tests groen** – 109 unit/integratie (Vitest, echte P
 
 | Fase | Onderdeel | Wat er nog moet gebeuren |
 |---|---|---|
-| 2 | GitHub-koppeling | OAuth-app, privérepo's klonen, push, pull requests, branch per taak |
 | 3 | Cowork (rest) | Spellingscontrole in de Schrijfstudio; OCR voor gescande PDF's; meldingen per e-mail bij afgeronde geplande taken (na koppeling e-mail) |
 | 4 | Integration Manager / MCP | Beheer per workspace, e-mail versturen na goedkeuring (Gmail/Microsoft 365), Shopify-productbeheer |
 | 5 | Chrome-extensie | `apps/chrome-extension` (MV3, side panel, contextmenu, `activeTab`, minimale host-permissies, native messaging) |
@@ -78,5 +85,6 @@ Tests: **122 automatische tests groen** – 109 unit/integratie (Vitest, echte P
 - **AI-sleutels**: in deze ontwikkelomgeving zijn geen Anthropic/OpenAI-sleutels beschikbaar. Alle tests gebruiken de demo-simulator (duidelijk gemarkeerd als *DEMO*); de echte adapters zijn eerder getest met gesimuleerde SDK-streams. Koppel een sleutel onder Instellingen → AI-providers voor echte antwoorden en AI Code-taken.
 - **Docker vereist voor AI Code**: de server (of worker) moet Docker kunnen aanroepen en het image `node:22-alpine` (of `SANDBOX_IMAGE`) hebben. Zonder Docker toont de app dat duidelijk; bestanden bewerken werkt dan wel.
 - **Netwerk bij installaties**: na toestemming krijgt alleen dat commando netwerk (`--network bridge`). Achter een bedrijfsproxy: `SANDBOX_PASS_PROXY=true`.
+- **GitHub**: de echte OAuth-stroom kon hier niet worden doorlopen (geen OAuth-app en geen GitHub-account in deze omgeving). De logica is getest met nagebootste GitHub-antwoorden en een echte lokale Git-push. Maak een OAuth-app aan (zie README) en test de koppeling één keer handmatig.
 - **Chrome-extensie**: nog niet gebouwd (fase 5). Er zijn daarom nog geen installatie-instructies die werken; zie de hoofd-README voor de geplande installatieprocedure.
 - **Sandbox-isolatie**: Docker-containers delen de kernel met de host. Voor multi-tenant productie met onbekende code: gVisor (`--runtime=runsc`) of microVM's (Firecracker) overwegen.

@@ -47,17 +47,32 @@ interface TaskState {
 type StepKind = "plan" | "read" | "write" | "edit" | "command" | "git" | "search" | "message" | "approval" | "error" | "final";
 const KIND: Record<string, StepKind> = { list_files: "read", read_file: "read", write_file: "write", edit_file: "edit", search_code: "search", run_command: "command", git_status: "git", git_diff: "git" };
 
-export async function startCodeTask(ctx: TenantContext, input: { projectId: string; prompt: string; provider?: string; modelId?: string; conversationId?: string | null; maxSteps?: number }) {
-  await openProject(ctx, input.projectId);
+/** Branchnaam voor een AI-taak, bijv. ai/korting-toevoegen-3f9a. */
+export function taskBranchName(prompt: string) {
+  const slug = prompt.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().split(/\s+/).slice(0, 4).join("-").replace(/[^a-z0-9-]/g, "").slice(0, 40) || "taak";
+  return `ai/${slug}-${Math.random().toString(16).slice(2, 6)}`;
+}
+
+export async function startCodeTask(ctx: TenantContext, input: { projectId: string; prompt: string; provider?: string; modelId?: string; conversationId?: string | null; maxSteps?: number; newBranch?: boolean }) {
+  const { dir } = await openProject(ctx, input.projectId);
+  let workBranch: string | null = null;
+  if (input.newBranch) {
+    workBranch = taskBranchName(input.prompt.replace(/^\/tool[\s\S]*$/m, ""));
+    try {
+      await gitOps.createBranch(dir, workBranch);
+    } catch (e) {
+      throw new ApiError(400, `Nieuwe branch maken mislukt: ${e instanceof Error ? e.message : e}`);
+    }
+  }
   return withTenant(ctx, async (tx) => {
     let model = input.provider && input.modelId ? { provider: input.provider, modelId: input.modelId } : await defaultChatModel(tx);
     if (!model) throw new ApiError(424, "Er is nog geen AI-model beschikbaar. Koppel een AI-provider onder Instellingen → AI-providers.", { setup: { provider: "anthropic", where: "settings/providers" } });
     const resolved = await resolveModel(tx, model.provider, model.modelId);
     model = { provider: resolved.provider, modelId: resolved.modelId };
     const [task] = await tx<{ id: string }[]>`
-      insert into code_tasks (org_id, project_id, conversation_id, prompt, provider, model_id, max_steps, created_by)
+      insert into code_tasks (org_id, project_id, conversation_id, prompt, provider, model_id, max_steps, created_by, work_branch)
       values (app_org_id(), ${input.projectId}, ${input.conversationId ?? null}, ${input.prompt}, ${model.provider}, ${model.modelId},
-              ${input.maxSteps ?? 16}, app_user_id())
+              ${input.maxSteps ?? 16}, app_user_id(), ${workBranch})
       returning id`;
     await enqueue(tx, "code.run", { taskId: task.id }, { priority: 4 });
     await audit(tx, { action: "code.task_started", targetType: "code_task", targetId: task.id, metadata: { projectId: input.projectId } });

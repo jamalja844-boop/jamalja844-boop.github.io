@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowLeft, Bot, ChevronDown, ChevronRight, File, FilePlus2, Folder, FolderOpen, GitBranch, GitCommitHorizontal, History, Play,
-  RefreshCw, Save, ServerCog, ShieldAlert, Sparkles, Terminal, Trash2,
+  CloudUpload, ExternalLink, GitPullRequest, RefreshCw, Save, ServerCog, ShieldAlert, Sparkles, Terminal, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/form";
@@ -42,6 +42,9 @@ export interface ProjectInfo {
   source_ref: string;
   status: string;
   error: string | null;
+  github_repo: string | null;
+  default_branch: string | null;
+  last_pr_url: string | null;
 }
 
 const TEMPLATE_PROMPT = "Voeg aan berekenOfferte een optionele korting in procenten toe (standaard 0, maximaal 50) die op het bedrag excl. btw wordt toegepast. Voeg een test toe en zorg dat alle tests slagen.";
@@ -74,6 +77,11 @@ export function ProjectWorkspace({ slug, project, initialTasks, initialCommands,
   const [networkConfirm, setNetworkConfirm] = useState<string | null>(null);
   const [commitMsg, setCommitMsg] = useState("");
   const [newBranch, setNewBranch] = useState("");
+  const [taskBranch, setTaskBranch] = useState(Boolean(project.github_repo));
+  const [ghDialog, setGhDialog] = useState<null | "push" | "pr">(null);
+  const [ghForm, setGhForm] = useState({ confirm: false, allowDefault: false, title: "", body: "", draft: true });
+  const [ghBusy, setGhBusy] = useState(false);
+  const [lastPr, setLastPr] = useState<string | null>(project.last_pr_url);
 
   const loadTree = useCallback(async () => {
     try {
@@ -170,7 +178,7 @@ export function ProjectWorkspace({ slug, project, initialTasks, initialCommands,
     setStarting(true);
     try {
       const [provider, ...rest] = model.split("::");
-      const r = await api.post<{ id: string }>(`${base}/tasks`, { prompt: prompt.trim(), provider: provider || undefined, modelId: rest.join("::") || undefined });
+      const r = await api.post<{ id: string }>(`${base}/tasks`, { prompt: prompt.trim(), provider: provider || undefined, modelId: rest.join("::") || undefined, newBranch: taskBranch });
       setTaskId(r.id);
       router.replace(`/w/${slug}/code/${project.id}?task=${r.id}`, { scroll: false });
       await loadProject();
@@ -179,6 +187,34 @@ export function ProjectWorkspace({ slug, project, initialTasks, initialCommands,
       toast.error(e instanceof ClientApiError ? e.message : "Taak starten mislukt");
     } finally {
       setStarting(false);
+    }
+  }
+
+  function openGh(kind: "push" | "pr") {
+    const lastTask = tasks.find((t) => t.status === "succeeded");
+    const title = (lastTask?.prompt ?? "").split("\n")[0].replace(/^\/tool.*$/, "").slice(0, 120) || `Wijzigingen ${git?.status.branch ?? ""}`.trim();
+    setGhForm({ confirm: false, allowDefault: false, title, body: lastTask ? `Gemaakt met AI Code (AI WorkStudio Pro).\n\nOpdracht:\n${lastTask.prompt.slice(0, 2000)}` : "", draft: true });
+    setGhDialog(kind);
+  }
+
+  async function githubAction() {
+    if (!ghDialog) return;
+    setGhBusy(true);
+    try {
+      if (ghDialog === "push") {
+        const r = await api.post<{ branch: string; repo: string }>(`${base}/github`, { action: "push", confirm: true, allowDefaultBranch: ghForm.allowDefault });
+        toast.success(`Branch ${r.branch} gepusht naar ${r.repo}`);
+      } else {
+        const r = await api.post<{ url: string; number: number }>(`${base}/github`, { action: "pull_request", confirm: true, title: ghForm.title, body: ghForm.body, draft: ghForm.draft });
+        setLastPr(r.url);
+        toast.success(`Pull request #${r.number} aangemaakt`, { action: { label: "Openen", onClick: () => window.open(r.url, "_blank", "noopener,noreferrer") } });
+      }
+      setGhDialog(null);
+      loadGit();
+    } catch (e) {
+      toast.error(e instanceof ClientApiError ? e.message : "GitHub-actie mislukt");
+    } finally {
+      setGhBusy(false);
     }
   }
 
@@ -336,7 +372,19 @@ export function ProjectWorkspace({ slug, project, initialTasks, initialCommands,
                       <ul className="flex flex-wrap gap-1.5">{git.status.entries.map((e) => <li key={e.path}><Badge tone={e.label === "nieuw" ? "success" : e.label === "verwijderd" ? "danger" : "warning"} className="font-mono">{e.label}: {e.path}</Badge></li>)}</ul>
                     )}
                     <DiffView diff={git.diff} className="max-h-none" />
-                    <p className="text-[11px] text-muted-foreground">Pushen naar GitHub en pull requests volgen met de GitHub-koppeling (OAuth). Tot die tijd blijven commits lokaal in de projectmap.</p>
+                    {project.github_repo ? (
+                      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 p-3" data-testid="github-actions">
+                        <GitPullRequest className="size-4 text-brand-sky-strong dark:text-brand-sky" />
+                        <span className="text-sm font-medium">GitHub: {project.github_repo}</span>
+                        {lastPr && <a href={lastPr} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-brand-sky-strong hover:underline dark:text-brand-sky">Laatste pull request <ExternalLink className="size-3" /></a>}
+                        <span className="ml-auto flex gap-1.5">
+                          <Button size="sm" variant="secondary" onClick={() => openGh("push")}><CloudUpload /> Pushen</Button>
+                          <Button size="sm" variant="accent" onClick={() => openGh("pr")}><GitPullRequest /> Pull request</Button>
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">Dit project is niet aan GitHub gekoppeld; commits blijven lokaal. Open een GitHub-repository via AI Code → Nieuw project om te kunnen pushen en pull requests te maken.</p>
+                    )}
                   </div>
                 ) : <Spinner />
               )}
@@ -372,6 +420,10 @@ export function ProjectWorkspace({ slug, project, initialTasks, initialCommands,
               </Select>
               <Button variant="accent" onClick={startTask} loading={starting} disabled={!prompt.trim() || !model || !sandbox.available} data-testid="start-task"><Play /> Start</Button>
             </div>
+            <label className="mt-2 flex items-center gap-2 text-xs">
+              <input type="checkbox" className="accent-[#14b8a6]" checked={taskBranch} onChange={(e) => setTaskBranch(e.target.checked)} data-testid="task-new-branch" />
+              Op een nieuwe branch werken (ai/…){project.github_repo ? " – aanbevolen voor een pull request" : ""}
+            </label>
             <p className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground"><ShieldAlert className="mt-0.5 size-3 shrink-0" /> AI Code werkt alleen in deze projectmap, test in de sandbox en toont de diff. Installaties en netwerk vragen jouw toestemming. Commit doe je zelf.</p>
           </div>
           {tasks.length > 0 && (
@@ -386,6 +438,33 @@ export function ProjectWorkspace({ slug, project, initialTasks, initialCommands,
           </div>
         </aside>
       </div>
+
+      <Dialog open={Boolean(ghDialog)} onOpenChange={(o) => !o && setGhDialog(null)}>
+        {ghDialog && (
+          <DialogContent title={ghDialog === "push" ? "Naar GitHub pushen" : "Pull request maken"} description={`Repository ${project.github_repo} · branch ${git?.status.branch ?? "?"}`}>
+            <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); githubAction(); }}>
+              {ghDialog === "pr" && (
+                <>
+                  <label className="grid gap-1 text-sm font-medium">Titel<Input value={ghForm.title} onChange={(e) => setGhForm({ ...ghForm, title: e.target.value })} required minLength={3} maxLength={200} /></label>
+                  <label className="grid gap-1 text-sm font-medium">Omschrijving<Textarea rows={5} value={ghForm.body} onChange={(e) => setGhForm({ ...ghForm, body: e.target.value })} maxLength={20000} /></label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[#14b8a6]" checked={ghForm.draft} onChange={(e) => setGhForm({ ...ghForm, draft: e.target.checked })} /> Als concept (draft) openen</label>
+                </>
+              )}
+              {ghDialog === "push" && git?.status.branch === (project.default_branch ?? "main") && (
+                <label className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/8 p-2.5 text-sm">
+                  <input type="checkbox" className="mt-0.5 accent-[#f59e0b]" checked={ghForm.allowDefault} onChange={(e) => setGhForm({ ...ghForm, allowDefault: e.target.checked })} />
+                  Je staat op de hoofdbranch. Ik wil bewust rechtstreeks naar &quot;{project.default_branch ?? "main"}&quot; pushen.
+                </label>
+              )}
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" className="mt-0.5 accent-[#14b8a6]" checked={ghForm.confirm} onChange={(e) => setGhForm({ ...ghForm, confirm: e.target.checked })} required data-testid="gh-confirm" />
+                Ik bevestig dat mijn gecommitte wijzigingen naar GitHub worden verstuurd{ghDialog === "pr" ? " en dat er een pull request wordt geopend" : ""}.
+              </label>
+              <Button type="submit" variant="accent" loading={ghBusy} disabled={!ghForm.confirm}>{ghDialog === "push" ? <><CloudUpload /> Pushen</> : <><GitPullRequest /> Pushen en pull request maken</>}</Button>
+            </form>
+          </DialogContent>
+        )}
+      </Dialog>
 
       <Dialog open={Boolean(networkConfirm)} onOpenChange={(o) => !o && setNetworkConfirm(null)}>
         <DialogContent title="Netwerktoegang toestaan?" description="Dit commando installeert pakketten en heeft daarvoor internet nodig.">

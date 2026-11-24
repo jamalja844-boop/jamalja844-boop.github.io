@@ -31,6 +31,7 @@ export const createProjectSchema = z.object({
   source: z.discriminatedUnion("type", [
     z.object({ type: z.literal("template"), template: z.enum(["node-starter", "empty"]) }),
     z.object({ type: z.literal("git"), url: z.string().url().max(500), branch: z.string().max(100).optional() }),
+    z.object({ type: z.literal("github"), repo: z.string().regex(/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/), branch: z.string().max(100).optional() }),
   ]),
 });
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
@@ -50,6 +51,8 @@ export const startCodeTaskSchema = z.object({
   modelId: z.string().max(120).optional(),
   conversationId: z.string().uuid().nullable().optional(),
   maxSteps: z.number().int().min(1).max(40).default(16),
+  /** Werk op een nieuwe branch (ai/…), aanbevolen voor GitHub-projecten. */
+  newBranch: z.boolean().default(false),
 });
 
 export type CodeTaskStatus = "queued" | "planning" | "running" | "waiting_approval" | "succeeded" | "failed" | "cancelled" | "limit_reached";
