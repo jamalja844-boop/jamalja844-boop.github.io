@@ -16,9 +16,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   devIndicators: { position: "bottom-right" },
   reactStrictMode: true,
-  serverExternalPackages: ["postgres", "unpdf", "mammoth"],
+  serverExternalPackages: ["postgres", "unpdf", "mammoth", "exceljs", "docx", "pdf-lib"],
   // Monorepo: gedeelde pakketten worden als TypeScript-bron meegebouwd.
-  transpilePackages: ["@workstudio/shared", "@workstudio/code-execution"],
+  transpilePackages: ["@workstudio/shared", "@workstudio/code-execution", "@workstudio/document-engine"],
   outputFileTracingRoot: path.join(__dirname, "../.."),
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },

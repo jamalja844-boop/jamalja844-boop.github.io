@@ -1,5 +1,6 @@
 import { claimJob, completeJob, failJob } from "@/lib/jobs/queue";
 import { handleJob, purgeExpiredData } from "@/lib/jobs/handlers";
+import { dispatchDueSchedules } from "@/lib/cowork/scheduler";
 
 /**
  * Worker-loop voor de Postgres-jobqueue. Wordt gebruikt door `npm run worker` (apart proces)
@@ -54,6 +55,18 @@ export function startWorker(opts: { concurrency: number; log?: (...a: unknown[])
     purgeTimer = setInterval(purge, 3600_000);
   }
 
+  // Taakplanner: elke 30 seconden verlopen geplande taken in de wachtrij zetten.
+  const tick = async () => {
+    try {
+      const n = await dispatchDueSchedules();
+      if (n) log(`taakplanner: ${n} geplande taak/taken in de wachtrij gezet`);
+    } catch (e) {
+      log("taakplanner mislukt", (e as Error).message);
+    }
+  };
+  void tick();
+  const scheduleTimer = setInterval(tick, 30_000);
+
   log(`gestart met ${opts.concurrency} parallelle slots`);
   const done = Promise.all(Array.from({ length: opts.concurrency }, (_, i) => loop(i + 1)));
 
@@ -63,6 +76,7 @@ export function startWorker(opts: { concurrency: number; log?: (...a: unknown[])
       if (stopping) return;
       stopping = true;
       if (purgeTimer) clearInterval(purgeTimer);
+      clearInterval(scheduleTimer);
       log("stoppen… wachten op lopende jobs");
       const deadline = Date.now() + timeoutMs;
       while (active > 0 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 250));

@@ -3,6 +3,7 @@ import { orgHandler, parseJson } from "@/lib/api/handler";
 import { notFound } from "@/lib/api/errors";
 import { withTenant } from "@/lib/db";
 import { resolveModel } from "@/lib/ai/service";
+import { listAttachments } from "@/lib/cowork/attachments";
 
 type P = { org: string; id: string };
 const id = z.string().uuid();
@@ -20,7 +21,8 @@ export const GET = orgHandler<P>({ permission: "chat.use" }, async ({ ctx, param
       select id, role, content, tool_calls, tool_call_id, tool_name, is_error, citations, metadata, provider, model_id,
              input_tokens, output_tokens, cost_usd, created_at
         from messages where conversation_id = ${convId} order by created_at`;
-    return { conversation, messages };
+    const attachments = await listAttachments(tx, convId);
+    return { conversation, messages, attachments };
   });
 });
 

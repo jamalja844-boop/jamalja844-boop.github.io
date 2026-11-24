@@ -2,6 +2,7 @@ import { z } from "zod";
 import { orgHandler } from "@/lib/api/handler";
 import { notFound } from "@/lib/api/errors";
 import { withTenant } from "@/lib/db";
+import { fileResponse, renderExport } from "@/lib/cowork/files";
 
 const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -35,13 +36,20 @@ function markdownToHtml(md: string): string {
   return out.join("\n");
 }
 
-/** Export als Markdown, platte tekst of HTML (printbaar, ook geschikt om als PDF op te slaan). */
+/** Export als Word, PDF, Excel (tabellen), Markdown, platte tekst of printbare HTML. */
 export const GET = orgHandler<{ org: string; id: string }>({ permission: "writing.use" }, async ({ req, ctx, params }) => {
   const docId = z.string().uuid().parse(params.id);
-  const format = z.enum(["md", "txt", "html"]).catch("md").parse(req.nextUrl.searchParams.get("format"));
+  const format = z.enum(["md", "txt", "html", "docx", "pdf", "xlsx"]).catch("md").parse(req.nextUrl.searchParams.get("format"));
   const [doc] = await withTenant(ctx.tenant, (tx) => tx<{ title: string; content: string; version: number; status: string }[]>`
     select title, content, version, status from writing_documents where id = ${docId}`);
   if (!doc) throw notFound("Document");
+  if (format === "docx" || format === "pdf" || format === "xlsx") {
+    const out = await renderExport(format, doc.content, {
+      title: doc.title, organization: ctx.org.name, author: ctx.user.name,
+      footerNote: `${doc.status === "approved" ? "Goedgekeurd" : "Concept"} – versie ${doc.version}`,
+    });
+    return fileResponse(out.body, out.mime, out.filename);
+  }
   const filename = doc.title.replace(/[^\p{L}\p{N} _-]/gu, "").trim().slice(0, 80) || "document";
   let body: string;
   let type: string;

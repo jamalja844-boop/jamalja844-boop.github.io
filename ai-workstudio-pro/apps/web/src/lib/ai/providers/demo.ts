@@ -130,6 +130,14 @@ function buildResponse(req: ChatRequest): { text: string; toolCalls: ToolCall[] 
   const agents = [...system.matchAll(/^- ([a-z][a-z0-9_]+)\b/gm)].map((m) => m[1]);
   const userTexts = req.messages.filter((m) => m.role === "user").map((m) => m.content);
   const topic = lastOf(userTexts) ?? "de opdracht";
+  // Gemarkeerde data (bijlagen, geplakte tekst) niet letterlijk herhalen in demo-antwoorden.
+  const dataBlocks = (topic.match(/<<<BEGIN /g) ?? []).length;
+  const cleanTopic = topic
+    .replace(/<<<BEGIN[\s\S]*?<<<EINDE[^>]*>>>/g, " ")
+    .replace(/(Bijlagen[^:\n]*:|Tekst uit de bijlage\(n\):|Tekst:|Gebruik het vorige antwoord als tekst\.)/g, " ")
+    .replace(/Antwoord alleen met JSON[^\n]*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() || "de meegestuurde tekst";
 
   const scripted = scriptedCall(req);
   if (scripted && scripted !== "done") return { text: `${DEMO_PREFIX} Stap: tool \`${scripted.name}\`.`, toolCalls: [scripted] };
@@ -148,7 +156,7 @@ function buildResponse(req: ChatRequest): { text: string; toolCalls: ToolCall[] 
   }
 
   if (/"Onderwerp: …"/.test(system) && last?.role === "user") {
-    const ask = topic.replace(/<<<[^>]*>>>/g, "").replace(/\s+/g, " ").trim();
+    const ask = cleanTopic;
     const subject = ask.replace(/^(schrijf\s+)?(een\s+)?(e-?mail\s+)?/i, "").slice(0, 70) || "Uw aanvraag";
     return {
       text:
@@ -160,10 +168,10 @@ function buildResponse(req: ChatRequest): { text: string; toolCalls: ToolCall[] 
   }
 
   if (req.responseFormat?.type === "json_schema") {
-    return { text: JSON.stringify(generateFromSchema(req.responseFormat.schema as Schema, { agents, topic: topic.replace(/\s+/g, " ") })), toolCalls: [] };
+    return { text: JSON.stringify(generateFromSchema(req.responseFormat.schema as Schema, { agents, topic: cleanTopic })), toolCalls: [] };
   }
   if (req.responseFormat?.type === "json") {
-    return { text: JSON.stringify({ demo: true, antwoord: `${DEMO_PREFIX} ${topic.slice(0, 200)}` }), toolCalls: [] };
+    return { text: JSON.stringify({ demo: true, antwoord: `${DEMO_PREFIX} ${cleanTopic.slice(0, 200)}` }), toolCalls: [] };
   }
 
   const sources = [...system.matchAll(/\[Bron (\d+)\]/g)].map((m) => `[Bron ${m[1]}]`);
@@ -172,7 +180,8 @@ function buildResponse(req: ChatRequest): { text: string; toolCalls: ToolCall[] 
     : "";
   return {
     text:
-      `${DEMO_PREFIX}\nJe bericht: "${topic.slice(0, 400)}"` +
+      `${DEMO_PREFIX}\nJe bericht: "${cleanTopic.slice(0, 400)}"` +
+      (dataBlocks ? `\n\nMeegestuurde data: ${dataBlocks} gemarkeerd tekstblok(ken), bijv. bijlagen. Een echt AI-model leest en verwerkt deze inhoud.` : "") +
       sourceLine +
       `\n\nDit is een gesimuleerd antwoord om de applicatie te testen. Stel een Anthropic- of OpenAI-sleutel in onder Instellingen → AI-providers voor echte antwoorden.`,
     toolCalls: [],

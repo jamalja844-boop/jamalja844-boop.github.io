@@ -11,6 +11,7 @@ export type SlashCommandName =
   | "summarize"
   | "analyze"
   | "create"
+  | "excel"
   | "code"
   | "browser";
 
@@ -34,6 +35,7 @@ export const SLASH_COMMANDS: SlashCommandDef[] = [
   { name: "summarize", label: "Samenvatten", description: "Vat tekst of een document samen", category: "analyse", usesPreviousAnswer: true },
   { name: "analyze", label: "Analyseren", description: "Analyseer informatie: kernpunten, risico's en aanbevelingen", category: "analyse", usesPreviousAnswer: true },
   { name: "create", label: "Document maken", description: "Maak een nieuw document in de Schrijfstudio", category: "werk" },
+  { name: "excel", label: "Excel maken", description: "Maak een Excel-bestand met tabellen (ook uit bijlagen)", category: "werk" },
   { name: "code", label: "Programmeertaak", description: "Start een AI Code-taak in het gekoppelde project", category: "werk" },
   { name: "browser", label: "Browsertaak", description: "Start een toegestane browsertaak", category: "werk" },
 ];

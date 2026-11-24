@@ -50,6 +50,8 @@ export function ChatStudio({ slug, options, initialConversations, canDecide }: {
   const [templateOpen, setTemplateOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  /** Net aangemaakt gesprek niet opnieuw laden: dat zou het binnenkomende antwoord kunnen overschrijven. */
+  const createdRef = useRef<string | null>(null);
   const base = `/api/w/${slug}`;
 
   const totals = useMemo(() => {
@@ -94,7 +96,7 @@ export function ChatStudio({ slug, options, initialConversations, canDecide }: {
   }, [base]);
 
   useEffect(() => {
-    if (activeId) loadConversation(activeId);
+    if (activeId && activeId !== createdRef.current) loadConversation(activeId);
   }, [activeId, loadConversation]);
 
   function selectConversation(id: string | null) {
@@ -189,6 +191,7 @@ export function ChatStudio({ slug, options, initialConversations, canDecide }: {
           provider, modelId, systemPrompt: settings.systemPrompt, toolKeys: settings.toolKeys, knowledgeBaseIds: settings.knowledgeBaseIds, promptId: settings.promptId,
         });
         id = r.conversation.id;
+        createdRef.current = id;
         setActiveId(id);
         router.replace(`/w/${slug}/llm?c=${id}`, { scroll: false });
       } catch (err) {

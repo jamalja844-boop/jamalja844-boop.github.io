@@ -151,7 +151,7 @@ export function KnowledgeClient({ slug, kbs, docsByKb, options, canManage }: { s
                     <Select value={minRole} onChange={(e) => setMinRole(e.target.value)} className="h-9 w-48" aria-label="Toegangsrecht">
                       {ROLES.map(([v, l]) => <option key={v} value={v}>Leesbaar voor: {l}</option>)}
                     </Select>
-                    <input ref={fileRef} type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json,.html" className="hidden" onChange={(e) => upload(e.target.files)} data-testid="file-input" />
+                    <input ref={fileRef} type="file" multiple accept=".pdf,.docx,.xlsx,.txt,.md,.csv,.json,.html" className="hidden" onChange={(e) => upload(e.target.files)} data-testid="file-input" />
                     <Button onClick={() => fileRef.current?.click()} loading={uploading}><Upload /> Bestanden kiezen</Button>
                   </div>
                 </div>

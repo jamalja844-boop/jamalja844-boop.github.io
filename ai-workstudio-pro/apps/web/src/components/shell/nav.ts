@@ -18,6 +18,7 @@ export const NAV: NavGroup[] = [
       { href: "/chat", label: "AI Chat", icon: "MessageCircle" },
       { href: "/writing", label: "Schrijfstudio", icon: "FileText" },
       { href: "/code", label: "AI Code", icon: "Code2" },
+      { href: "/cowork", label: "Cowork", icon: "Briefcase" },
     ],
   },
   {

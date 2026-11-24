@@ -306,11 +306,14 @@ function DocumentEditor({ slug, id, onChanged, onDeleted }: { slug: string; id: 
         <div>
           <p className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"><Download className="size-3.5" /> Exporteren</p>
           <div className="grid grid-cols-3 gap-1.5">
+            {([["docx", "Word"], ["pdf", "PDF"], ["xlsx", "Excel"]] as const).map(([f, label]) => (
+              <Button key={f} asChild variant="accent" size="sm"><a href={`${url}/export?format=${f}`} data-testid={`export-${f}`}>{label}</a></Button>
+            ))}
             {(["md", "txt", "html"] as const).map((f) => (
               <Button key={f} asChild variant="secondary" size="sm"><a href={`${url}/export?format=${f}`}>.{f}</a></Button>
             ))}
           </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">HTML is printbaar: open het en kies &quot;Opslaan als PDF&quot;. DOCX en PDF direct volgen in fase 3.</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Word en PDF met bedrijfsnaam, versie en paginanummers. Excel bevat de tabellen uit het document.</p>
         </div>
         <div className="min-h-0">
           <p className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"><History className="size-3.5" /> Versies</p>

@@ -80,4 +80,5 @@ export type ChatArtifact =
   | { type: "text"; title: string; kind: DocumentKind }
   | { type: "document"; documentId: string; title: string }
   | { type: "code_task"; taskId: string; projectId: string; projectName: string }
+  | { type: "file"; fileId: string; filename: string; format: "xlsx" | "docx" | "pdf"; sizeBytes: number; sheets?: { name: string; rows: number }[] }
   | { type: "notice"; title: string; missing: string[] };

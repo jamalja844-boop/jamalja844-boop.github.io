@@ -11,6 +11,7 @@ export const SUPPORTED_TYPES: Record<string, string> = {
   csv: "text/csv",
   json: "application/json",
   html: "text/html",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 };
 
 export function detectType(filename: string, mime: string): keyof typeof SUPPORTED_TYPES | null {
@@ -23,12 +24,12 @@ export function detectType(filename: string, mime: string): keyof typeof SUPPORT
 /** Controleert magische bytes zodat een bestand niet als ander type vermomd kan worden. */
 export function verifyMagic(type: string, buf: Buffer): boolean {
   if (type === "pdf") return buf.subarray(0, 5).toString("latin1") === "%PDF-";
-  if (type === "docx") return buf[0] === 0x50 && buf[1] === 0x4b; // ZIP
+  if (type === "docx" || type === "xlsx") return buf[0] === 0x50 && buf[1] === 0x4b; // ZIP
   // Tekstformaten: geen NUL-bytes in de eerste 8 KB.
   return !buf.subarray(0, 8192).includes(0);
 }
 
-function parseCsv(text: string): string[][] {
+export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
@@ -66,6 +67,10 @@ export async function extractText(type: string, buf: Buffer): Promise<ExtractedS
       const mammoth = await import("mammoth");
       const res = await mammoth.extractRawText({ buffer: buf });
       return [{ text: res.value }];
+    }
+    case "xlsx": {
+      const { readXlsx, sheetsToText } = await import("@workstudio/document-engine");
+      return [{ text: sheetsToText(await readXlsx(buf), 2000) }];
     }
     case "csv": {
       const rows = parseCsv(buf.toString("utf8"));

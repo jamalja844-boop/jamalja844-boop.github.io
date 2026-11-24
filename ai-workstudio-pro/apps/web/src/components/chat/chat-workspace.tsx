@@ -5,8 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
-  Check, Code2, Copy, Download, FileText, FolderGit2, Info, KeyRound, Mail, MessageCircle, PanelRight, Plus, Save, Search, Send,
-  Sparkles, Square, Trash2, User, Wand2,
+  Check, Code2, Copy, Download, FileSpreadsheet, FileText, FolderGit2, Info, KeyRound, Mail, MessageCircle, PanelRight, Paperclip, Plus, Save,
+  Search, Send, Sparkles, Square, Trash2, User, Wand2, X,
 } from "lucide-react";
 import { commandSuggestions, SLASH_COMMANDS, type ChatArtifact, type DocumentKind, type SlashCommandDef } from "@workstudio/shared";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,18 @@ interface ConvSummary {
   pinned: boolean;
   updated_at: string;
 }
+
+interface AttachmentChip {
+  id: string;
+  filename: string;
+  file_type: string;
+  size_bytes: number;
+  pages?: number | null;
+  injection_flags?: string[];
+}
+
+const ATTACHMENT_ACCEPT = ".pdf,.docx,.xlsx,.csv,.txt,.md,.json,.html";
+const formatBytes = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 export interface StyleOption {
   id: string;
@@ -94,6 +106,13 @@ export function ChatWorkspace({
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  /** Gesprek dat net in send() is aangemaakt: niet opnieuw laden (zou het binnenkomende antwoord overschrijven). */
+  const createdRef = useRef<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<AttachmentChip[]>([]);
+  const [convFiles, setConvFiles] = useState<AttachmentChip[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const defaultStyle = styles.find((s) => s.id === defaultStyleId) ?? styles.find((s) => s.is_default) ?? null;
@@ -115,7 +134,8 @@ export function ChatWorkspace({
 
   const loadConversation = useCallback(async (id: string) => {
     try {
-      const r = await api.get<{ conversation: ConvSummary; messages: UiMessage[] }>(`${base}/chat/conversations/${id}`);
+      const r = await api.get<{ conversation: ConvSummary; messages: UiMessage[]; attachments: AttachmentChip[] }>(`${base}/chat/conversations/${id}`);
+      setConvFiles(r.attachments);
       setModel(modelValue(r.conversation.provider, r.conversation.model_id));
       setStyleId(r.conversation.style_id);
       setProjectId(r.conversation.project_id);
@@ -128,7 +148,7 @@ export function ChatWorkspace({
   }, [base]);
 
   useEffect(() => {
-    if (activeId) loadConversation(activeId);
+    if (activeId && activeId !== createdRef.current) loadConversation(activeId);
   }, [activeId, loadConversation]);
 
   function selectConversation(id: string | null) {
@@ -136,6 +156,8 @@ export function ChatWorkspace({
     setActiveId(id);
     setMessages([]);
     setError(null);
+    setPendingFiles([]);
+    setConvFiles([]);
     router.replace(id ? `/w/${slug}/chat?c=${id}` : `/w/${slug}/chat`, { scroll: false });
     if (!id) setTimeout(() => inputRef.current?.focus(), 50);
   }
@@ -172,6 +194,39 @@ export function ChatWorkspace({
     }
   }
 
+  async function upload(list: FileList | File[] | null) {
+    const filesToSend = Array.from(list ?? []);
+    if (!filesToSend.length) return;
+    setUploading(true);
+    try {
+      for (const f of filesToSend.slice(0, 10)) {
+        const form = new FormData();
+        form.append("file", f);
+        if (activeId) form.append("conversationId", activeId);
+        try {
+          const r = await api.post<{ attachment: AttachmentChip }>(`${base}/chat/attachments`, form);
+          setPendingFiles((p) => [...p, r.attachment]);
+          if (r.attachment.injection_flags?.length) toast.warning(`${f.name}: bevat tekst die op instructies lijkt. Die wordt alleen als inhoud behandeld.`);
+        } catch (e) {
+          toast.error(`${f.name}: ${e instanceof ClientApiError ? e.message : "upload mislukt"}`);
+        }
+      }
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function removeAttachment(id: string) {
+    try {
+      await api.del(`${base}/chat/attachments/${id}`);
+      setPendingFiles((p) => p.filter((x) => x.id !== id));
+      setConvFiles((p) => p.filter((x) => x.id !== id));
+    } catch (e) {
+      toast.error(e instanceof ClientApiError ? e.message : "Verwijderen mislukt");
+    }
+  }
+
   async function send(text?: string) {
     const content = (text ?? input).trim();
     if (!content || busy) return;
@@ -185,6 +240,7 @@ export function ChatWorkspace({
         const { provider, modelId } = parseModelValue(model);
         const r = await api.post<{ conversation: ConvSummary }>(`${base}/chat/conversations`, { provider, modelId, styleId, projectId });
         id = r.conversation.id;
+        createdRef.current = id;
         setActiveId(id);
         router.replace(`/w/${slug}/chat?c=${id}`, { scroll: false });
       } catch (err) {
@@ -193,15 +249,18 @@ export function ChatWorkspace({
         return;
       }
     }
+    const sending = pendingFiles;
     setInput("");
-    setMessages((ms) => [...ms, { id: "pending-user", role: "user", content }]);
+    setPendingFiles([]);
+    setConvFiles((c) => [...c, ...sending.filter((f) => !c.some((x) => x.id === f.id))]);
+    setMessages((ms) => [...ms, { id: "pending-user", role: "user", content, metadata: sending.length ? { attachments: sending.map((f) => f.filename) } : {} }]);
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy(true);
     setError(null);
     try {
       const res = await fetch(`${base}/chat/conversations/${id}/messages`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content }), signal: controller.signal,
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content, attachmentIds: sending.map((f) => f.id) }), signal: controller.signal,
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -301,7 +360,18 @@ export function ChatWorkspace({
       </aside>
 
       {/* Midden: chat */}
-      <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-border bg-card" aria-label="AI Chat">
+      <section
+        className={cn("relative flex min-h-0 min-w-0 flex-col rounded-2xl border border-border bg-card", dragOver && "ring-2 ring-brand-sky")}
+        aria-label="AI Chat"
+        onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setDragOver(true); } }}
+        onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(false); }}
+        onDrop={(e) => { if (e.dataTransfer.files.length) { e.preventDefault(); setDragOver(false); upload(e.dataTransfer.files); } }}
+      >
+        {dragOver && (
+          <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center rounded-2xl bg-navy-950/60 text-sm font-semibold text-white backdrop-blur-sm">
+            Laat los om toe te voegen (PDF, Word, Excel, CSV, tekst)
+          </div>
+        )}
         <header className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-[15px] font-semibold">{active?.title ?? "Nieuwe chat"}</h1>
@@ -373,7 +443,7 @@ export function ChatWorkspace({
           ) : (
             <ol className="mx-auto flex max-w-3xl flex-col gap-6">
               {messages.map((m) => (
-                <ChatMessageItem key={m.id} m={m} slug={slug} onSave={() => openSave(m)} />
+                <ChatMessageItem key={m.id} m={m} slug={slug} conversationId={activeId} onSave={() => openSave(m)} />
               ))}
             </ol>
           )}
@@ -408,7 +478,33 @@ export function ChatWorkspace({
               })}
             </ul>
           )}
+          {(pendingFiles.length > 0 || uploading) && (
+            <div className="mb-2 flex flex-wrap items-center gap-1.5" data-testid="pending-attachments">
+              {pendingFiles.map((f) => (
+                <span key={f.id} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/60 py-1 pl-2 pr-1 text-xs">
+                  {f.file_type === "xlsx" || f.file_type === "csv" ? <FileSpreadsheet className="size-3.5 text-turq-600" /> : <FileText className="size-3.5 text-brand-sky-strong" />}
+                  <span className="max-w-[180px] truncate font-medium">{f.filename}</span>
+                  <span className="text-muted-foreground">{formatBytes(f.size_bytes)}</span>
+                  <button type="button" onClick={() => removeAttachment(f.id)} className="rounded p-0.5 hover:bg-background" aria-label={`Verwijder ${f.filename}`}><X className="size-3" /></button>
+                </span>
+              ))}
+              {uploading && <span className="text-xs text-muted-foreground">Bestand lezen…</span>}
+              {pendingFiles.length > 0 && !input.trim() && (
+                <span className="ml-auto flex gap-1">
+                  {(["summarize", "analyze", "excel"] as const).map((c) => (
+                    <Button key={c} type="button" size="sm" variant="secondary" className="h-7" onClick={() => send(`/${c}`)} disabled={busy}>
+                      {{ summarize: "Samenvatten", analyze: "Analyseren", excel: "Naar Excel" }[c]}
+                    </Button>
+                  ))}
+                </span>
+              )}
+            </div>
+          )}
           <div className="flex items-end gap-2 rounded-2xl border border-input bg-background p-2 focus-within:ring-2 focus-within:ring-ring/50">
+            <input ref={fileRef} type="file" multiple accept={ATTACHMENT_ACCEPT} className="hidden" onChange={(e) => upload(e.target.files)} data-testid="attach-input" />
+            <Button type="button" size="icon" variant="ghost" onClick={() => fileRef.current?.click()} aria-label="Bestand toevoegen" title="Bestand toevoegen (PDF, Word, Excel, CSV, tekst)" disabled={uploading}>
+              <Paperclip />
+            </Button>
             <textarea
               ref={inputRef}
               value={input}
@@ -452,6 +548,22 @@ export function ChatWorkspace({
             <Link href={`/w/${slug}/writing?tab=styles`} className="mt-2 inline-block text-xs font-semibold text-brand-sky-strong hover:underline dark:text-brand-sky">Stijlen en persoonlijke instructies</Link>
           </div>
           <div>
+            <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Bestanden in dit gesprek</p>
+            {convFiles.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Sleep een bestand in de chat of gebruik de paperclip. Alleen de tekst wordt bewaard, privé voor jou.</p>
+            ) : (
+              <ul className="grid gap-1" data-testid="conversation-files">
+                {convFiles.map((f) => (
+                  <li key={f.id} className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] hover:bg-muted">
+                    {f.file_type === "xlsx" || f.file_type === "csv" ? <FileSpreadsheet className="size-3.5 shrink-0 text-turq-600" /> : <FileText className="size-3.5 shrink-0 text-brand-sky-strong" />}
+                    <span className="min-w-0 flex-1 truncate">{f.filename}</span>
+                    <button onClick={() => removeAttachment(f.id)} className="hidden text-muted-foreground hover:text-danger group-hover:block" aria-label={`Verwijder ${f.filename}`}><Trash2 className="size-3.5" /></button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
             <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Opdrachten</p>
             <ul className="grid gap-1">
               {SLASH_COMMANDS.map((c) => (
@@ -476,7 +588,7 @@ export function ChatWorkspace({
   );
 }
 
-function ChatMessageItem({ m, slug, onSave }: { m: UiMessage; slug: string; onSave: () => void }) {
+function ChatMessageItem({ m, slug, conversationId, onSave }: { m: UiMessage; slug: string; conversationId: string | null; onSave: () => void }) {
   const [copied, setCopied] = useState(false);
   const art = m.metadata?.artifact as ChatArtifact | undefined;
   const command = m.metadata?.command as string | undefined;
@@ -486,6 +598,11 @@ function ChatMessageItem({ m, slug, onSave }: { m: UiMessage; slug: string; onSa
         <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-md bg-navy-900 px-4 py-2.5 text-[14.5px] text-white dark:bg-navy-700">
           {command && <span className="mr-1.5 rounded-md bg-white/15 px-1.5 py-0.5 font-mono text-[12px]">/{command}</span>}
           {command ? m.content.replace(/^\s*\/[a-z]+\s*/i, "") : m.content}
+          {Array.isArray(m.metadata?.attachments) && (m.metadata.attachments as string[]).length > 0 && (
+            <span className="mt-1.5 flex flex-wrap gap-1">
+              {(m.metadata.attachments as string[]).map((f) => <span key={f} className="inline-flex items-center gap-1 rounded-md bg-white/15 px-1.5 py-0.5 text-[11.5px]"><Paperclip className="size-3" />{f}</span>)}
+            </span>
+          )}
         </div>
         <span className="mt-1 grid size-7 shrink-0 place-items-center rounded-full bg-muted"><User className="size-3.5" /></span>
       </li>
@@ -496,7 +613,8 @@ function ChatMessageItem({ m, slug, onSave }: { m: UiMessage; slug: string; onSa
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
-  const showText = !art || art.type === "text" || art.type === "document";
+  const showText = !art || art.type === "text" || art.type === "document" || art.type === "file";
+  const exportBase = conversationId && !m.id.startsWith("streaming") ? `/api/w/${slug}/chat/conversations/${conversationId}/messages/${m.id}/export` : null;
   return (
     <li className="flex gap-3" data-testid="msg-assistant" data-command={command ?? ""}>
       <span className="mt-1 grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-sky to-turq-400 text-navy-950"><Sparkles className="size-3.5" /></span>
@@ -523,15 +641,36 @@ function ChatMessageItem({ m, slug, onSave }: { m: UiMessage; slug: string; onSa
           </div>
         )}
         {art?.type === "document" && (
-          <Link href={`/w/${slug}/writing?doc=${art.documentId}`} className="mt-3 flex items-center gap-3 rounded-xl border border-turq-400/40 bg-turq-400/8 px-3 py-2.5 text-sm hover:bg-turq-400/12" data-testid="document-card">
-            <FileText className="size-4 text-turq-600 dark:text-turq-300" /> <span className="font-medium">{art.title}</span>
-            <span className="ml-auto text-xs text-muted-foreground">Opgeslagen in Schrijfstudio →</span>
-          </Link>
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-turq-400/40 bg-turq-400/8 px-3 py-2.5 text-sm" data-testid="document-card">
+            <FileText className="size-4 text-turq-600 dark:text-turq-300" />
+            <Link href={`/w/${slug}/writing?doc=${art.documentId}`} className="font-medium hover:underline">{art.title}</Link>
+            <span className="ml-auto flex gap-1">
+              <Button asChild size="sm" variant="secondary" className="h-7"><a href={`/api/w/${slug}/writing/documents/${art.documentId}/export?format=docx`}>Word</a></Button>
+              <Button asChild size="sm" variant="secondary" className="h-7"><a href={`/api/w/${slug}/writing/documents/${art.documentId}/export?format=pdf`}>PDF</a></Button>
+              <Button asChild size="sm" variant="ghost" className="h-7"><Link href={`/w/${slug}/writing?doc=${art.documentId}`}>Openen →</Link></Button>
+            </span>
+          </div>
+        )}
+        {art?.type === "file" && (
+          <a href={`/api/w/${slug}/files/${art.fileId}`} className="mt-3 flex items-center gap-3 rounded-xl border border-turq-400/40 bg-turq-400/8 px-3 py-2.5 text-sm hover:bg-turq-400/12" data-testid="file-card">
+            <FileSpreadsheet className="size-5 text-turq-600 dark:text-turq-300" />
+            <span className="min-w-0">
+              <span className="block truncate font-semibold">{art.filename}</span>
+              <span className="block text-xs text-muted-foreground">{formatBytes(art.sizeBytes)}{art.sheets?.length ? ` · ${art.sheets.map((x) => `${x.name} (${x.rows} rijen)`).join(", ")}` : ""}</span>
+            </span>
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-turq-600 dark:text-turq-300"><Download className="size-3.5" /> Downloaden</span>
+          </a>
         )}
         {!m.streaming && art?.type !== "notice" && art?.type !== "code_task" && (
           <div className="mt-2 flex flex-wrap items-center gap-1">
             <Button variant="ghost" size="sm" onClick={doCopy}>{copied ? <Check /> : <Copy />} Kopiëren</Button>
-            {art?.type !== "document" && <Button variant="ghost" size="sm" onClick={onSave} data-testid="save-document"><Save /> Opslaan als document</Button>}
+            {art?.type !== "document" && art?.type !== "file" && <Button variant="ghost" size="sm" onClick={onSave} data-testid="save-document"><Save /> Opslaan als document</Button>}
+            {exportBase && art?.type !== "document" && art?.type !== "file" && (
+              <>
+                <Button asChild variant="ghost" size="sm"><a href={`${exportBase}?format=docx`} data-testid="export-docx"><Download /> Word</a></Button>
+                <Button asChild variant="ghost" size="sm"><a href={`${exportBase}?format=pdf`}><Download /> PDF</a></Button>
+              </>
+            )}
             {typeof m.metadata?.styleName === "string" && <span className="ml-auto text-[11px] text-muted-foreground">Stijl: {m.metadata.styleName}</span>}
             {m.output_tokens ? <span className={cn("text-[11px] text-muted-foreground", typeof m.metadata?.styleName !== "string" && "ml-auto")}>· {formatNumber((m.input_tokens ?? 0) + m.output_tokens)} tokens · {formatUsd(m.cost_usd ?? null)}</span> : null}
           </div>

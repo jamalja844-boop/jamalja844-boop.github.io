@@ -9,7 +9,8 @@ export type JobType =
   | "orchestration.advance"
   | "workflow.advance"
   | "retention.purge"
-  | "code.run";
+  | "code.run"
+  | "schedule.run";
 
 export interface JobRow {
   id: string;

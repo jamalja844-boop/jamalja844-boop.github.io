@@ -10,16 +10,17 @@ Gebouwd met Next.js 15 · React 19 · TypeScript · Tailwind CSS 4 · CodeMirror
 
 ---
 
-## Wat werkt (fase 1)
+## Wat werkt (fase 1 en 3)
 
 | Onderdeel | Mogelijkheden |
 |---|---|
-| **AI Chat** | Gesprekken met streaming, model- en stijlkeuze, projectkoppeling, zoeken, export (Markdown). Slash-opdrachten met autocomplete: `/email` `/reply` `/rewrite` `/humanize` `/translate engels` `/summarize` `/analyze` `/create` `/code` `/browser`. Elke opdracht heeft een eigen server-side handler. E-mails worden nooit automatisch verstuurd. |
+| **AI Chat** | Gesprekken met streaming, model- en stijlkeuze, projectkoppeling, zoeken, export (Markdown). Slash-opdrachten met autocomplete: `/email` `/reply` `/rewrite` `/humanize` `/translate engels` `/summarize` `/analyze` `/create` `/excel` `/code` `/browser`. Bestanden toevoegen met de paperclip of door te slepen. Elke opdracht heeft een eigen server-side handler. E-mails worden nooit automatisch verstuurd. |
 | **Schrijfstudio** | Schrijfstijlen per organisatie (standaard: *natuurlijk, kort, vriendelijk en professioneel*), persoonlijke instructies, documenten met versies, terugzetten, delen, goedkeuren, archiveren en export (.md, .txt, printbare .html). |
+| **Cowork** | Bestanden in AI Chat (PDF, Word, Excel, CSV, tekst) samenvatten, analyseren of omzetten; `/excel` maakt een echt Excel-bestand; elk antwoord en document als Word of PDF; taakplanner die dagelijks, wekelijks of maandelijks een concept klaarzet. |
 | **AI Code** | Projecten uit een sjabloon of openbare Git-repository, bestandsboom en editor, terminal in Docker zonder netwerk, Git (status, diff, branch, commit), AI-codetaken met plan, stappenlog, tests in de sandbox, gewijzigde bestanden en diff. Pakketinstallaties alleen na jouw toestemming. |
 | **Workspaces** | Clean Schoonmaakbedrijf B.V. en NobleNest.nl volledig gescheiden (Row Level Security per organisatie). |
 
-Niet-gebouwde onderdelen (Chrome-extensie, AI Browser, GitHub OAuth, Cowork-bestanden) worden in de app eerlijk als "nog niet beschikbaar" getoond, met wat er ontbreekt – nooit gesimuleerd.
+Niet-gebouwde onderdelen (Chrome-extensie, AI Browser, GitHub OAuth) worden in de app eerlijk als "nog niet beschikbaar" getoond, met wat er ontbreekt – nooit gesimuleerd.
 
 ## Monorepo
 
@@ -28,6 +29,7 @@ ai-workstudio-pro/
   apps/web/                 Next.js: UI, API-routes (/api/w/[org]/…), migraties, worker, tests
   packages/shared/          Slash-opdrachten, zod-contracten, gedeelde typen
   packages/code-execution/  Werkmap-beveiliging, Docker-sandbox, Git, projectsjablonen
+  packages/document-engine/ Word (.docx), PDF en Excel (.xlsx) maken; Excel lezen
   docs/                     Implementatieplan
   PROGRESS.md               Voortgang
 ```
@@ -82,6 +84,10 @@ Zet in productie `ENABLE_DEMO_PROVIDER=false`, gebruik https in `APP_URL`, een v
 5. **Project openen**: AI Code → *Nieuw project* → sjabloon *Node.js-voorbeeld*.
 6. **AI Code-taak**: beschrijf de wijziging (bijv. een kortingsfunctie met test) en klik *Start*, of koppel het project aan een chat en gebruik `/code …`.
 7. **Resultaten**: plan, elke stap, testuitvoer uit de sandbox, gewijzigde bestanden en de diff. Commit zelf via het Git-tabblad.
+
+### Taakplanner
+
+Cowork → Taakplanner → *Nieuwe taak*: kies een opdracht (bijv. `/create nieuwsbrief …` of `/excel urenoverzicht …`), herhaling en tijd. De worker (`npm run worker`, of `RUN_WORKER_IN_WEB=true`) voert de taak op het juiste moment uit; het resultaat staat als concept in de Schrijfstudio of bij Cowork → Bestanden. Er wordt nooit automatisch iets verstuurd.
 
 ## Scripts (vanuit `ai-workstudio-pro/`)
 

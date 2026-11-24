@@ -28,7 +28,8 @@ ai-workstudio-pro/
     shared/              Contracten (zod), slash-opdrachten, typen                       ← gebouwd
     code-execution/      Werkmap, Docker-sandbox, Git                                    ← gebouwd
     ai-providers/ security/ agent-runtime/ tool-registry/                                ← extractie uit apps/web/src/lib (fase 8)
-    document-engine/ browser-automation/ ui/                                             ← fase 3, 6, 8
+    document-engine/     Word, PDF, Excel genereren en Excel lezen                       ← gebouwd (fase 3)
+    browser-automation/ ui/                                                              ← fase 6, 8
 ```
 
 Keuze: packages worden als TypeScript-bron gedeeld (`transpilePackages`), zonder aparte buildstap. Losse `apps/api` en `apps/worker` worden pas afgesplitst als schaal of deployment dat vraagt; tot die tijd draaien ze als routes en script binnen `apps/web` (geen lege façades).
@@ -39,7 +40,7 @@ Keuze: packages worden als TypeScript-bron gedeeld (`transpilePackages`), zonder
 |---|---|---|
 | **1** | Monorepo, rebranding, **AI Chat** met echte slash-opdrachten, **Schrijfstudio** (stijlen, persoonlijke instructies, documenten met versies, goedkeuren, export), **AI Code** (projecten uit sjabloon/Git, editor, sandbox-terminal, Git-status/diff/branch/commit, AI-codetaken met plan, stappen, toestemming en diff), tests | **Gereed** |
 | 2 | GitHub OAuth (privérepo's, push, pull requests), branch-per-taak, testresultaten in PR | Gepland |
-| 3 | Cowork: bestandsuploads, DOCX/PDF/XLSX-generatie (document-engine), geplande taken in de UI | Gepland |
+| 3 | Cowork: bijlagen in AI Chat, DOCX/PDF/XLSX-generatie (document-engine), `/excel`, taakplanner | **Gereed** |
 | 4 | Integration Manager + MCP-beheer per workspace (bestaande MCP-tool uitbreiden), e-mailverzending na goedkeuring | Gepland |
 | 5 | Chrome-extensie MV3 (side panel, contextmenu, actieve tab, native messaging) | Gepland |
 | 6 | AI Browser met Playwright in een aparte, afgeschermde dienst, toestemming per domein | Gepland |
@@ -66,6 +67,11 @@ Keuze: packages worden als TypeScript-bron gedeeld (`transpilePackages`), zonder
 - Projecten in `<WORKSPACE_ROOT>/<org-id>/<project-id>` (alleen UUID's, geen padinjectie); bron: sjabloon of openbare https-repository van een toegestane host.
 - `@workstudio/code-execution`: padcontrole (geen `..`, geen `.git`, geen symlink-ontsnapping), Docker-sandbox (`--network none`, `--cap-drop ALL`, `no-new-privileges`, alleen-lezen root, tmpfs, CPU/geheugen/pids-limieten, niet-root gebruiker), Git met uitgeschakelde hooks en protocollen.
 - AI-codetaak (jobtype `code.run`): plan (JSON-schema) → toolloop (`list_files`, `read_file`, `write_file`, `edit_file`, `search_code`, `run_command`, `git_status`, `git_diff`) → samenvatting met gewijzigde bestanden en diff. Installatiecommando's pauzeren de taak met een goedkeuringsverzoek (`code_command`); de starter of een beheerder beslist. Limieten: stappen, actieve tijd, annuleren. Commits blijven een handeling van de gebruiker.
+
+### Cowork (fase 3)
+- Bijlagen (`chat_attachments`): type- en inhoudscontrole, extractie (PDF, Word, Excel, CSV, tekst), injectiedetectie; alleen tekst/tabellen worden bewaard. Bijlagen horen bij een gesprek en gaan als gemarkeerde data naar het model.
+- Bestanden (`cowork_files`): gegenereerde Excel-bestanden (`/excel`, planner), max. 10 MB, privé.
+- Taakplanner (`scheduled_tasks`, `scheduled_task_runs`): de worker zet elke 30 s verlopen taken in de wachtrij (`FOR UPDATE SKIP LOCKED`, geen dubbele runs) en berekent het volgende tijdstip in de tijdzone van de gebruiker. Een run draait met de rechten van de eigenaar en levert altijd een concept op.
 
 ## 5. Teststrategie
 - Unit: slash-opdrachten, e-mailparser, padbeveiliging, sandboxregels, demo-scripts.

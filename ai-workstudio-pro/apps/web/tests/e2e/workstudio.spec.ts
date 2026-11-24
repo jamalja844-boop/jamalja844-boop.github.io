@@ -50,7 +50,7 @@ test("A. inloggen opent AI Chat; /email maakt een e-mail die als document wordt 
   await expect(page.getByRole("heading", { name: "Waar kan ik je mee helpen?" })).toBeVisible();
 
   // Slash-opdracht met autocomplete
-  const input = page.getByLabel("Bericht");
+  const input = page.getByLabel("Bericht", { exact: true });
   await input.fill("/em");
   await expect(page.getByTestId("command-suggestions")).toContainText("/email");
   await input.press("Enter");
@@ -121,7 +121,7 @@ test("C. /code vanuit AI Chat start een taak in het gekoppelde project", async (
 
   await page.getByTestId("new-chat").click();
   await page.getByLabel("Project", { exact: true }).selectOption({ label: "E2E Offertecalculator" });
-  await page.getByLabel("Bericht").fill('/code draai de tests\n/tool run_command {"command":"npm test"}');
+  await page.getByLabel("Bericht", { exact: true }).fill('/code draai de tests\n/tool run_command {"command":"npm test"}');
   await page.getByRole("button", { name: "Versturen" }).click();
   const card = page.getByTestId("code-task-card");
   await expect(card).toBeVisible();
@@ -134,9 +134,63 @@ test("C. /code vanuit AI Chat start een taak in het gekoppelde project", async (
   await context.close();
 });
 
+test("E. Cowork: CSV-bijlage in AI Chat wordt een Excel-bestand om te downloaden", async ({ browser }) => {
+  const { page, context } = await session(browser);
+  await page.getByTestId("new-chat").click();
+  await page.getByTestId("attach-input").setInputFiles({ name: "uren.csv", mimeType: "text/csv", buffer: Buffer.from("Medewerker;Object;Uren\nFatima;Kantoor Zeist;7,5\nJohan;School Utrecht;6\n") });
+  await expect(page.getByTestId("pending-attachments")).toContainText("uren.csv");
+  await page.getByRole("button", { name: "Naar Excel" }).click();
+  const card = page.getByTestId("file-card");
+  await expect(card).toBeVisible();
+  await expect(card).toContainText(".xlsx");
+  const href = await card.getAttribute("href");
+  const res = await page.request.get(href!);
+  expect(res.ok()).toBe(true);
+  expect(res.headers()["content-type"]).toContain("spreadsheetml");
+  expect((await res.body()).subarray(0, 2).toString()).toBe("PK");
+  await expect(page.getByTestId("msg-user").last()).toContainText("uren.csv");
+  await context.close();
+});
+
+test("F. Schrijfstudio: document als Word en PDF downloaden; antwoord uit de chat als Word", async ({ browser }) => {
+  const { page, context } = await session(browser);
+  await page.goto(`/w/${slug}/writing`);
+  await page.getByTestId("document-list").getByText("E2E intakebevestiging").click();
+  for (const [id, type, magic] of [["export-docx", "wordprocessingml", "PK"], ["export-pdf", "application/pdf", "%PDF-"]] as const) {
+    const href = await page.getByTestId(id).getAttribute("href");
+    const res = await page.request.get(href!);
+    expect(res.ok(), id).toBe(true);
+    expect(res.headers()["content-type"]).toContain(type);
+    expect((await res.body()).subarray(0, magic.length).toString()).toBe(magic);
+  }
+  const xlsx = await page.request.get((await page.getByTestId("export-xlsx").getAttribute("href"))!);
+  expect(xlsx.status()).toBe(409); // dit document bevat geen tabellen
+  await context.close();
+});
+
+test("G. Taakplanner: taak inplannen, nu uitvoeren en het concept openen", async ({ browser }) => {
+  const { page, context } = await session(browser);
+  await page.goto(`/w/${slug}/cowork?tab=planner`);
+  await page.getByTestId("new-schedule").click();
+  await page.getByLabel("Naam", { exact: true }).fill("E2E weekbericht");
+  await page.getByLabel("Opdracht", { exact: true }).fill("/email aan het team met de planning voor volgende week");
+  await page.getByLabel("Herhaling").selectOption("weekly");
+  await page.getByLabel("Dag", { exact: true }).selectOption("1");
+  await page.getByLabel("Tijd", { exact: true }).fill("08:15");
+  await page.getByTestId("save-schedule").click();
+  const item = page.getByTestId("schedule-list").locator("li", { hasText: "E2E weekbericht" }).first();
+  await expect(item).toContainText("Elke maandag om 08:15");
+  await item.getByTestId("run-now").click();
+  await expect(item.locator('[data-status="succeeded"]')).toBeVisible({ timeout: 60_000 });
+  await item.getByRole("link", { name: /E2E weekbericht/ }).click();
+  await expect(page.getByTestId("doc-status")).toHaveText("Concept");
+  await expect(page.getByTestId("doc-content")).toHaveValue(/^Onderwerp: /);
+  await context.close();
+});
+
 test("D. mobiel: AI Chat zonder horizontaal scrollen", async ({ browser }) => {
   const { page, context } = await session(browser, { width: 390, height: 844 });
-  await expect(page.getByLabel("Bericht")).toBeVisible();
+  await expect(page.getByLabel("Bericht", { exact: true })).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(overflow).toBe(false);
   await context.close();

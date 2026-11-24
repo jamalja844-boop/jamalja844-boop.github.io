@@ -22,7 +22,8 @@ describe("slash-opdrachten", () => {
     expect(normalizeLanguage("duits")).toBe("Duits");
     expect(normalizeLanguage("klingon")).toBeNull();
     expect(commandSuggestions("/tr").map((c) => c.name)).toEqual(["translate"]);
-    expect(commandSuggestions("/").length).toBe(10);
+    expect(commandSuggestions("/").length).toBe(11);
+    expect(commandSuggestions("/ex").map((c) => c.name)).toEqual(["excel"]);
   });
 });
 

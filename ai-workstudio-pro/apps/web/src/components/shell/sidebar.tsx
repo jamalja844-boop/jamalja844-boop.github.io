@@ -7,14 +7,14 @@ import { useTheme } from "next-themes";
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
 import {
   Blocks, Bot, Building2, Check, ChevronsUpDown, LayoutDashboard, Library, LogOut, Menu, MessagesSquare, Moon,
-  Network, Plug, ScrollText, Settings, ShieldCheck, Sun, Workflow, X, Plus, MessageCircle, FileText, Code2,
+  Network, Plug, ScrollText, Settings, ShieldCheck, Sun, Workflow, X, Plus, MessageCircle, FileText, Code2, Briefcase,
 } from "lucide-react";
 import { Logo } from "@/components/shell/logo";
 import { NAV } from "@/components/shell/nav";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/client/api";
 
-const ICONS = { LayoutDashboard, MessagesSquare, ScrollText, Blocks, Bot, Plug, Library, Network, Workflow, Building2, ShieldCheck, Settings, MessageCircle, FileText, Code2 };
+const ICONS = { LayoutDashboard, MessagesSquare, ScrollText, Blocks, Bot, Plug, Library, Network, Workflow, Building2, ShieldCheck, Settings, MessageCircle, FileText, Code2, Briefcase };
 
 export interface ShellProps {
   org: { slug: string; name: string; isDemo: boolean };

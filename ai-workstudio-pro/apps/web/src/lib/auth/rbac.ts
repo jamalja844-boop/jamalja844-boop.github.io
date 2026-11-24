@@ -20,7 +20,7 @@ export type Permission =
   | "models.manage" | "prompts.manage" | "apps.manage" | "tools.manage" | "knowledge.manage"
   | "agents.manage" | "workflows.manage" | "chat.use" | "apps.use" | "tools.execute"
   | "agents.run" | "workflows.run" | "dashboard.view" | "prompts.view" | "knowledge.view" | "agents.view"
-  | "writing.use" | "styles.manage" | "code.use" | "code.manage";
+  | "writing.use" | "styles.manage" | "code.use" | "code.manage" | "cowork.use";
 
 // De rechtenmatrix staat in de database (role_permissions) – zelfde bron als RLS.
 let cache: { at: number; map: Map<OrgRole, Set<Permission>> } | null = null;

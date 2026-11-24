@@ -5,6 +5,7 @@ import { executeAgentRun } from "@/lib/agents/runner";
 import { advanceOrchestration, planOrchestration } from "@/lib/orchestrator/engine";
 import { advanceWorkflow } from "@/lib/workflows/engine";
 import { executeCodeTask } from "@/lib/code/runner";
+import { executeScheduledRun } from "@/lib/cowork/scheduler";
 
 /**
  * Bepaalt namens welke gebruiker een job draait. Agent-, orchestratie- en workflowjobs
@@ -22,6 +23,9 @@ async function contextFor(job: JobRow): Promise<TenantContext> {
     } else if (job.type.startsWith("orchestration.") && p.orchestrationId) {
       const [r] = await tx<{ created_by: string | null }[]>`select created_by from orchestrations where id = ${p.orchestrationId} and org_id = ${job.org_id}`;
       userId = r?.created_by ?? userId;
+    } else if (job.type === "schedule.run" && p.runId) {
+      const [r] = await tx<{ user_id: string }[]>`select user_id from scheduled_task_runs where id = ${p.runId} and org_id = ${job.org_id}`;
+      userId = r?.user_id ?? userId;
     } else if (job.type === "code.run" && p.taskId) {
       const [r] = await tx<{ created_by: string | null }[]>`select created_by from code_tasks where id = ${p.taskId} and org_id = ${job.org_id}`;
       userId = r?.created_by ?? userId;
@@ -52,6 +56,8 @@ export async function handleJob(job: JobRow): Promise<unknown> {
       return advanceWorkflow(ctx, p.runId);
     case "code.run":
       return executeCodeTask(ctx, p.taskId);
+    case "schedule.run":
+      return executeScheduledRun(ctx, p.runId);
     default:
       throw new Error(`Onbekend jobtype: ${job.type}`);
   }
