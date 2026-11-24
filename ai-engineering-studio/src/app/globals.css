@@ -1,0 +1,195 @@
+@import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Huisstijl – Clean Schoonmaakbedrijf / AI Engineering Studio
+   Donkerblauw #0B1F3A · Lichtblauw #6EBEEB · Wit #FFFFFF · Turquoise accenten */
+@theme {
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-navy-50: #eef4fb;
+  --color-navy-100: #d6e3f3;
+  --color-navy-200: #a9c2e3;
+  --color-navy-300: #7397c9;
+  --color-navy-400: #446ea9;
+  --color-navy-500: #2a5089;
+  --color-navy-600: #1c3c6c;
+  --color-navy-700: #142f56;
+  --color-navy-800: #0f2747;
+  --color-navy-900: #0b1f3a;
+  --color-navy-950: #061327;
+
+  --color-brand-sky: #6ebeeb;
+  --color-brand-sky-strong: #3fa6df;
+  --color-turq-300: #5eead4;
+  --color-turq-400: #2dd4bf;
+  --color-turq-500: #14b8a6;
+  --color-turq-600: #0d9488;
+
+  --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
+  --animate-fade-in: fade-in 0.35s ease-out both;
+  --animate-slide-up: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+:root {
+  --background: #f4f7fb;
+  --foreground: #0b1f3a;
+  --card: #ffffff;
+  --card-foreground: #0b1f3a;
+  --muted: #eaf0f7;
+  --muted-foreground: #52637d;
+  --border: #dbe4ef;
+  --input: #d3deeb;
+  --primary: #0b1f3a;
+  --primary-foreground: #ffffff;
+  --accent: #e3f3fc;
+  --accent-foreground: #0b1f3a;
+  --ring: #6ebeeb;
+  --sidebar: #0b1f3a;
+  --sidebar-foreground: #dbe8f7;
+  --sidebar-muted: #8ea6c6;
+  --sidebar-active: rgba(110, 190, 235, 0.14);
+  --success: #0d9488;
+  --warning: #b7791f;
+  --danger: #c2413a;
+  --glow: rgba(45, 212, 191, 0.25);
+  color-scheme: light;
+}
+
+.dark {
+  --background: #061327;
+  --foreground: #e8f0fa;
+  --card: #0b1f3a;
+  --card-foreground: #e8f0fa;
+  --muted: #10284a;
+  --muted-foreground: #8ea6c6;
+  --border: #173459;
+  --input: #1b3b64;
+  --primary: #6ebeeb;
+  --primary-foreground: #061327;
+  --accent: #12304f;
+  --accent-foreground: #e8f0fa;
+  --ring: #2dd4bf;
+  --sidebar: #050f20;
+  --sidebar-foreground: #dbe8f7;
+  --sidebar-muted: #7d95b8;
+  --sidebar-active: rgba(45, 212, 191, 0.12);
+  --success: #2dd4bf;
+  --warning: #f6c05c;
+  --danger: #f2766d;
+  --glow: rgba(45, 212, 191, 0.35);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background: rgba(110, 190, 235, 0.35);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .glass {
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+    backdrop-filter: blur(14px);
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .glow-ring {
+    box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.35), 0 0 24px var(--glow);
+  }
+  .text-gradient {
+    background: linear-gradient(100deg, #6ebeeb 0%, #2dd4bf 60%, #a7f3d0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .prose-chat p { margin: 0.35rem 0; }
+  .prose-chat ul { list-style: disc; padding-left: 1.25rem; margin: 0.35rem 0; }
+  .prose-chat ol { list-style: decimal; padding-left: 1.25rem; margin: 0.35rem 0; }
+  .prose-chat code { font-family: var(--font-mono); font-size: 0.85em; background: var(--muted); padding: 0.1rem 0.3rem; border-radius: 0.3rem; }
+  .prose-chat pre { font-family: var(--font-mono); font-size: 0.8rem; background: var(--muted); padding: 0.75rem; border-radius: 0.6rem; overflow-x: auto; margin: 0.5rem 0; white-space: pre-wrap; }
+  .prose-chat strong { font-weight: 650; }
+  .prose-chat h1, .prose-chat h2, .prose-chat h3 { font-weight: 650; margin: 0.6rem 0 0.3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.react-flow__attribution { display: none; }
+.react-flow {
+  --xy-background-color-default: transparent;
+  --xy-background-pattern-color-default: color-mix(in srgb, var(--border) 70%, transparent);
+  --xy-minimap-background-color-default: var(--card);
+  --xy-minimap-mask-background-color-default: color-mix(in srgb, var(--background) 70%, transparent);
+  --xy-controls-button-background-color-default: var(--card);
+  --xy-controls-button-background-color-hover-default: var(--muted);
+  --xy-controls-button-color-default: var(--foreground);
+  --xy-controls-button-border-color-default: var(--border);
+  --xy-edge-stroke-default: #6ebeeb;
+  --xy-node-background-color-default: transparent;
+  --xy-node-border-default: none;
+}
