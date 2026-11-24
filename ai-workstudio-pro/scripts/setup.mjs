@@ -36,7 +36,8 @@ const fail = (m) => {
 };
 
 function run(cmd, args, opts = {}) {
-  const r = spawnSync(cmd, args, { encoding: "utf8", shell: process.platform === "win32", ...opts });
+  // docker.exe wordt zonder shell gestart (geen cmd.exe-interpretatie van tekens zoals ^); npm gebruikt hieronder wel een shell.
+  const r = spawnSync(cmd, args, { encoding: "utf8", ...opts });
   return { code: r.status ?? 1, out: (r.stdout ?? "").trim(), err: (r.stderr ?? "").trim() };
 }
 
