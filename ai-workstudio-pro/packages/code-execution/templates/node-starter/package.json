@@ -1,0 +1,12 @@
+{
+  "name": "offerte-calculator",
+  "version": "1.0.0",
+  "description": "Rekent schoonmaakoffertes uit (startproject voor AI Code)",
+  "type": "module",
+  "main": "src/offerte.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

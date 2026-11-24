@@ -1,6 +1,6 @@
 # jamalja844-boop.github.io
 My website
 
-## AI Engineering Studio
+## AI WorkStudio Pro
 
-De map [`ai-engineering-studio/`](ai-engineering-studio/README.md) bevat het AI Engineering Platform (Next.js + PostgreSQL): LLM Studio, Prompt Studio, App Builder, Tools & Integraties, RAG-kennisbank, Agent Builder, Multi-Agent Orchestrator, Engineering Dashboard met workflows en een 3D AI-kantoor. Zie de README in die map voor installatie en gebruik. Deze map wordt niet gepubliceerd op GitHub Pages.
+De map [`ai-workstudio-pro/`](ai-workstudio-pro/README.md) bevat AI WorkStudio Pro: een AI-werkplek (Next.js + PostgreSQL, npm-workspaces-monorepo) met AI Chat met slash-opdrachten, Schrijfstudio, AI Code (projecten, sandbox-terminal, Git, AI-codetaken), en daarnaast LLM Studio, Prompt Studio, App Builder, Tools & Integraties, RAG-kennisbank, agents, multi-agent orchestratie, workflows en een 3D AI-kantoor. Zie de README en `PROGRESS.md` in die map. Deze map wordt niet gepubliceerd op GitHub Pages.

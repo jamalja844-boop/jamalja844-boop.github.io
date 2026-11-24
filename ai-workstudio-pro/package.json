@@ -1,0 +1,28 @@
+{
+  "name": "ai-workstudio-pro",
+  "version": "0.2.0",
+  "private": true,
+  "description": "AI WorkStudio Pro \u2013 AI-werkplek met chat, code, cowork, browserautomatisering en Chrome-extensie",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @workstudio/web",
+    "build": "npm run build -w @workstudio/web",
+    "start": "npm run start -w @workstudio/web",
+    "worker": "npm run worker -w @workstudio/web",
+    "db:migrate": "npm run db:migrate -w @workstudio/web",
+    "db:seed": "npm run db:seed -w @workstudio/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint -w @workstudio/web",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e -w @workstudio/web"
+  },
+  "overrides": {
+    "postcss": "^8.5.8"
+  }
+}

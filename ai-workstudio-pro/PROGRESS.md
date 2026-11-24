@@ -1,0 +1,68 @@
+# Voortgang – AI WorkStudio Pro
+
+Laatst bijgewerkt: 24 november 2026 · Plan: [docs/IMPLEMENTATIEPLAN.md](docs/IMPLEMENTATIEPLAN.md)
+
+## Samenvatting
+
+**Fase 1 is gereed en getest.** De verplichte eerste route werkt end-to-end in een productiebuild:
+inloggen → AI Chat → schrijfopdracht (`/email`) → opslaan als document → goedkeuren → project openen → `npm test` in de sandbox → AI Code-taak → resultaten (stappen, gewijzigde bestanden, diff).
+
+Tests: **98 automatische tests groen** – 88 unit/integratie (Vitest, echte PostgreSQL en Docker) en 10 end-to-end (Playwright, productiebuild).
+
+## Afgerond
+
+### Fundament
+- [x] Bestaande applicatie geanalyseerd en hergebruikt; verplaatst naar monorepo `ai-workstudio-pro/` (npm workspaces: `apps/web`, `packages/shared`, `packages/code-execution`)
+- [x] Rebranding naar AI WorkStudio Pro; nieuwe navigatie (Werken · Automatiseren · Kennis & koppelingen · Beheer); inloggen opent AI Chat
+- [x] Migratie `0006_workstudio_chat_code.sql`: nieuwe rechten, tabellen en RLS-policies
+- [x] Dashboard toont de nieuwe eerste route als voortgang
+- [x] Job-worker herbruikbaar (`lib/jobs/worker.ts`); optioneel in het webproces (`RUN_WORKER_IN_WEB=true`)
+
+### AI Chat
+- [x] Gesprekken (privé, zoeken, verwijderen, exporteren als Markdown), modelkeuze, schrijfstijl en projectkoppeling per gesprek
+- [x] Slash-opdrachten met autocomplete en echte server-side handlers: `/email` `/reply` `/rewrite` `/humanize` `/translate` `/summarize` `/analyze` `/create` `/code` `/browser`
+- [x] E-mailkaart (onderwerp + tekst), kopiëren, opslaan als document; nooit automatisch verzonden
+- [x] `/code` start een echte AI Code-taak met live voortgang in de chat
+- [x] `/browser` meldt eerlijk wat ontbreekt (geen simulatie)
+- [x] Geplakte tekst wordt als onbetrouwbare data behandeld (prompt-injectiebeleid)
+
+### Schrijfstudio
+- [x] Schrijfstijlen per organisatie (standaard: natuurlijk, kort, vriendelijk en professioneel), beheer voor eigenaar/beheerder
+- [x] Persoonlijke instructies, voorkeursstijl en standaardtaal per gebruiker
+- [x] Documenten met versiegeschiedenis, versie bekijken/terugzetten, delen, archiveren, verwijderen
+- [x] Goedkeuren vóór extern gebruik; wijzigen na goedkeuring zet terug naar concept
+- [x] Export: Markdown, tekst, printbare HTML (→ PDF via de browser)
+
+### AI Code
+- [x] Projecten uit sjabloon (Node.js-offertecalculator met tests, of leeg) of openbare https-Git-repository van toegestane hosts
+- [x] Bestandsboom, CodeMirror-editor (syntaxkleuring, Ctrl+S), nieuw/verwijderen
+- [x] Terminal in Docker-sandbox: geen netwerk, geen rechten, alleen-lezen systeem, limieten; installaties alleen na expliciete toestemming (met audit)
+- [x] Git: status, gekleurde diff, branches maken/wisselen, commit met de naam van de gebruiker, log
+- [x] AI Code-taken: plan → bestanden lezen/wijzigen → testen in sandbox → diff en samenvatting; pauze + goedkeuring voor installaties; annuleren; limieten op stappen en tijd; alle stappen en commando's gelogd
+- [x] Projecten en taken strikt gescheiden per organisatie (RLS + UUID-paden)
+
+### Kwaliteit
+- [x] Unit-tests: slash-opdrachten, e-mailparser, padbeveiliging, symbolische links, sandboxregels, demo-scripts
+- [x] Integratietests: RLS documenten/projecten, versies en goedkeuring, alle chatopdrachten, sjabloonproject, sandbox zonder netwerk, AI Code-taak, pauze/weigering bij installatie
+- [x] E2E: eerste route (A–C) + mobiele weergave (D); bestaande 6 e2e-tests blijven groen
+- [x] Gevonden en opgelost tijdens testen: testscript sjabloon (Node 22), `.git` zichtbaar in bestandsboom, horizontaal scrollen op mobiel, overlappende panelen op mobiel, edge-bundeling van de worker-hook, en twee randgevallen met symbolische links (map aanmaken vóór controle; schrijven via een hangende link)
+
+## Openstaand (volgende fases)
+
+| Fase | Onderdeel | Wat er nog moet gebeuren |
+|---|---|---|
+| 2 | GitHub-koppeling | OAuth-app, privérepo's klonen, push, pull requests, branch per taak |
+| 3 | Cowork | Bestandsuploads in chat, DOCX/PDF/XLSX genereren (`packages/document-engine`), spellingscontrole, geplande taken in de UI |
+| 4 | Integration Manager / MCP | Beheer per workspace, e-mail versturen na goedkeuring (Gmail/Microsoft 365), Shopify-productbeheer |
+| 5 | Chrome-extensie | `apps/chrome-extension` (MV3, side panel, contextmenu, `activeTab`, minimale host-permissies, native messaging) |
+| 6 | AI Browser | Playwright in een aparte, afgeschermde dienst (`packages/browser-automation`), toestemming per domein, bevestiging vóór formulieren/aankopen |
+| 7 | Business workspaces | Clean: CRM, planning, uren, kwaliteit; NobleNest.nl: Shopify-producten, SEO, social – bovenop de bestaande agents |
+| 8 | Platform | Packages extraheren (`ai-providers`, `security`, `agent-runtime`, `tool-registry`, `ui`), losse `apps/api` en `apps/worker`, Tauri-desktop, Supabase-Auth-adapter |
+
+## Technische blokkades en aandachtspunten
+
+- **AI-sleutels**: in deze ontwikkelomgeving zijn geen Anthropic/OpenAI-sleutels beschikbaar. Alle tests gebruiken de demo-simulator (duidelijk gemarkeerd als *DEMO*); de echte adapters zijn eerder getest met gesimuleerde SDK-streams. Koppel een sleutel onder Instellingen → AI-providers voor echte antwoorden en AI Code-taken.
+- **Docker vereist voor AI Code**: de server (of worker) moet Docker kunnen aanroepen en het image `node:22-alpine` (of `SANDBOX_IMAGE`) hebben. Zonder Docker toont de app dat duidelijk; bestanden bewerken werkt dan wel.
+- **Netwerk bij installaties**: na toestemming krijgt alleen dat commando netwerk (`--network bridge`). Achter een bedrijfsproxy: `SANDBOX_PASS_PROXY=true`.
+- **Chrome-extensie**: nog niet gebouwd (fase 5). Er zijn daarom nog geen installatie-instructies die werken; zie de hoofd-README voor de geplande installatieprocedure.
+- **Sandbox-isolatie**: Docker-containers delen de kernel met de host. Voor multi-tenant productie met onbekende code: gVisor (`--runtime=runsc`) of microVM's (Firecracker) overwegen.
