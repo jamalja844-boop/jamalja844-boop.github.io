@@ -9,7 +9,7 @@
     "worker": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env worker/render-worker.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.mts",
     "smoke": "tsx scripts/smoke-render.ts smoke-out"
   },
   "dependencies": {

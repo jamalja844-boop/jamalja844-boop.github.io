@@ -34,9 +34,9 @@ export default function Dashboard() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader title={t.dash.welcome} subtitle={t.dash.subtitle} />
-      <form className="card mb-6 flex flex-wrap gap-3 bg-gradient-to-r from-accent/20 to-accent2/10" onSubmit={(e) => { e.preventDefault(); router.push(`/create?source=url&url=${encodeURIComponent(url)}`); }}>
-        <input className="input min-w-[280px] flex-1 text-base" placeholder={t.dash.quickStart} value={url} onChange={(e) => setUrl(e.target.value)} type="url" required />
-        <button className="btn-primary px-6">{t.dash.go} →</button>
+      <form className="card mb-6 flex flex-wrap gap-3 bg-gradient-to-r from-accent/20 to-accent2/10" onSubmit={(e) => { e.preventDefault(); router.push(`/shop?url=${encodeURIComponent(url)}`); }}>
+        <input className="input min-w-[280px] flex-1 text-base" placeholder={t.shop.subtitle} value={url} onChange={(e) => setUrl(e.target.value)} type="url" required />
+        <button className="btn-primary px-6">🛒 {t.shop.scan} →</button>
       </form>
       <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {tiles.map((x) => (

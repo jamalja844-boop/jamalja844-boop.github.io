@@ -42,3 +42,50 @@ export async function aiProductScene(owner: string, input: Buffer, prompt: strin
   const per = parseFloat(settings.costPerImage);
   return { image: Buffer.from(b64, "base64"), costUsd: Number.isFinite(per) ? per : null };
 }
+
+/**
+ * Local background removal for product photos shot on a plain (usually white) background:
+ * flood-fills from the image border over pixels close to the border colour and makes them
+ * transparent, with a soft edge. Returns null when the background is not plain enough.
+ */
+export async function cutout(input: Buffer, tolerance = 38): Promise<Buffer | null> {
+  const img = sharp(input).rotate().resize(1400, 1400, { fit: "inside", withoutEnlargement: true }).ensureAlpha();
+  const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
+  const { width: w, height: h } = info;
+  const px = (x: number, y: number) => (y * w + x) * 4;
+  // border colour = median-ish of border samples; require the border to be uniform
+  const samples: number[][] = [];
+  for (let x = 0; x < w; x += Math.max(1, Math.floor(w / 40))) samples.push([...data.subarray(px(x, 0), px(x, 0) + 3)], [...data.subarray(px(x, h - 1), px(x, h - 1) + 3)]);
+  for (let y = 0; y < h; y += Math.max(1, Math.floor(h / 40))) samples.push([...data.subarray(px(0, y), px(0, y) + 3)], [...data.subarray(px(w - 1, y), px(w - 1, y) + 3)]);
+  const bg = [0, 1, 2].map((c) => samples.map((s) => s[c]).sort((a, b) => a - b)[Math.floor(samples.length / 2)]);
+  const dist = (i: number) => Math.abs(data[i] - bg[0]) + Math.abs(data[i + 1] - bg[1]) + Math.abs(data[i + 2] - bg[2]);
+  const uniform = samples.filter((s) => Math.abs(s[0] - bg[0]) + Math.abs(s[1] - bg[1]) + Math.abs(s[2] - bg[2]) < tolerance).length / samples.length;
+  if (uniform < 0.9) return null;
+  const mask = new Uint8Array(w * h); // 1 = background
+  const stack: number[] = [];
+  const push = (x: number, y: number) => {
+    const k = y * w + x;
+    if (!mask[k] && dist(k * 4) < tolerance) { mask[k] = 1; stack.push(k); }
+  };
+  for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+  for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+  while (stack.length) {
+    const k = stack.pop()!;
+    const x = k % w, y = (k - x) / w;
+    if (x > 0) push(x - 1, y);
+    if (x < w - 1) push(x + 1, y);
+    if (y > 0) push(x, y - 1);
+    if (y < h - 1) push(x, y + 1);
+  }
+  let removed = 0;
+  for (let k = 0; k < w * h; k++) if (mask[k]) removed++;
+  const share = removed / (w * h);
+  if (share < 0.08 || share > 0.97) return null; // nothing to remove, or the product itself got removed
+  // soft edge: background pixels next to the product get partial alpha by colour distance
+  for (let k = 0; k < w * h; k++) {
+    if (!mask[k]) continue;
+    const d = dist(k * 4);
+    data[k * 4 + 3] = d > tolerance * 0.5 ? Math.round(255 * Math.min(1, (d - tolerance * 0.5) / (tolerance * 0.5)) * 0.6) : 0;
+  }
+  return sharp(data, { raw: { width: w, height: h, channels: 4 } }).trim({ threshold: 1 }).png().toBuffer().catch(() => sharp(data, { raw: { width: w, height: h, channels: 4 } }).png().toBuffer());
+}

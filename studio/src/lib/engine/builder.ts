@@ -52,6 +52,7 @@ interface Ctx {
   body: string;
   tracks: Record<"bg" | "media" | "graphic" | "text" | "fx" | "caption" | "voice" | "music", Track>;
   imgIdx: number;
+  usedVideo?: boolean;
 }
 
 const nextImage = (c: Ctx) => {
@@ -78,8 +79,13 @@ function headline(c: Ctx, text: string, start: number, dur: number, box: { x: nu
   });
 }
 
-function productVisual(c: Ctx, start: number, dur: number, box: { x: number; y: number; w: number; h: number }): Clip[] {
+function productVisual(c: Ctx, start: number, dur: number, box: { x: number; y: number; w: number; h: number }, allowVideo = false): Clip[] {
   const s = c.style;
+  const hv = c.brief.product.heroVideo;
+  if (allowVideo && hv && !c.usedVideo) {
+    c.usedVideo = true;
+    return [makeClip("video", { name: "Product video", start, duration: dur, x: box.x, y: box.y, width: box.w, height: box.h, in: anim("zoomIn", 14, "expo.out"), out: anim("fade", 8), shadow: { enabled: true, color: "rgba(0,0,0,0.35)", blur: 40, x: 0, y: 24 }, props: { src: hv.src, assetId: hv.assetId, fit: "cover", radius: Math.round(c.W * 0.04), muted: true, volume: 0, trimStart: 0 } })];
+  }
   const img = nextImage(c);
   if (s.productPresentation === "3d") {
     return [makeClip("product3d", { name: "3D product", start, duration: dur, x: box.x, y: box.y, width: box.w, height: box.h, in: anim("zoomIn", 20, "expo.out"), props: { src: img.src, assetId: img.assetId, shape: "card", envColor: c.pal.accent, color: c.brief.brand.primary } })];
@@ -123,7 +129,7 @@ function sceneClips(c: Ctx, sc: ScriptScene, start: number, dur: number, index: 
     case "solution": {
       out.push(headline(c, sc.onScreenText, start, dur, textBox, mid * 1.2));
       if (sc.subText) out.push(headline(c, sc.subText, start, dur, subBox, small, { delay: 8, weight: 500, font: c.body, upper: false, preset: "fade" }));
-      out.push(...productVisual(c, start, dur, mediaBox));
+      out.push(...productVisual(c, start, dur, mediaBox, sc.kind === "product"));
       if (brief.product.logo && sc.kind === "product") {
         out.push(makeClip("logo", { name: "Logo", start: start + 6, duration: dur - 6, x: portrait ? W / 2 - W * 0.15 : m, y: portrait ? H * 0.88 : H * 0.84, width: W * 0.3, height: H * 0.06, in: anim("fade", 12), props: { src: brief.product.logo, assetId: brief.product.logoAssetId, reveal: "scale", color: pal.text } }));
       }

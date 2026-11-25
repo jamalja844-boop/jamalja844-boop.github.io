@@ -23,6 +23,9 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
   }
   if (!["http:", "https:"].includes(u.protocol)) throw new Error("Only http(s) URLs are allowed");
   if (u.username || u.password) throw new Error("Credentials in URLs are not allowed");
+  // Explicit allow-list for local staging shops / tests (off by default), e.g. SCRAPER_ALLOW_HOSTS=localhost:4010
+  const allow = (process.env.SCRAPER_ALLOW_HOSTS || "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (allow.includes(u.host)) return u;
   const host = u.hostname.replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".local") || host.endsWith(".internal")) throw new Error("Private hosts are not allowed");
   let addrs: { address: string }[];

@@ -23,7 +23,7 @@ export interface MediaData {
   duration?: number;
   /** dominant colors (images) */
   colors?: string[];
-  source: "upload" | "import" | "ai" | "tts" | "render";
+  source: "upload" | "import" | "ai" | "tts" | "render" | "generated";
   sourceUrl?: string;
   provider?: string;
   /** user declaration that they hold usage rights for this asset */

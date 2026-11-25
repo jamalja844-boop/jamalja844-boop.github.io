@@ -22,6 +22,8 @@ export interface ProductInfo {
   imageAssetIds?: string[];
   logo?: string;
   logoAssetId?: string;
+  /** AI-generated product video clip used in the product scene */
+  heroVideo?: { src: string; assetId?: string };
   rating?: { value: number; count: number };
   features: string[];
 }

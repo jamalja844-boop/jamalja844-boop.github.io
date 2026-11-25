@@ -7,7 +7,7 @@ import { readFileBuffer } from "../server/storage";
 import { scrapeProduct, type ScrapeResult } from "../server/scrape";
 import { generateJson } from "../providers/llm";
 import { synthesize } from "../providers/tts";
-import { aiProductScene, studioShot } from "../providers/image";
+import { aiProductScene, cutout, studioShot } from "../providers/image";
 import { buildProject, captionClip, palette } from "../engine/builder";
 import type { AdBrief, AdCopy, ProductInfo, ScriptScene } from "../engine/brief";
 import { AD_STYLES, getStyle, type AdStyleId, type SceneKind } from "../engine/styles";
@@ -15,6 +15,16 @@ import { saturation } from "../engine/color";
 import { makeClip, anim } from "../../remotion/defaults";
 import type { ProjectDoc } from "../../remotion/types";
 import { analyzeProject } from "./analyst";
+import { generateMusic } from "../engine/music";
+import { startVideo, pollVideo } from "../providers/video";
+import { enqueueRender } from "../server/queue";
+import type { RenderData } from "../models";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import sharp from "sharp";
 import { ruleCopy, ruleScript, benefitsFrom } from "./rulebased";
 import type { AgentId, AgentStep, BrandKitData, GenerateInput, JobData, ProjectData } from "../models";
 import { LANGUAGES } from "../providers/registry";
@@ -64,20 +74,20 @@ class Job {
   }
 }
 
-export async function createGenerateJob(owner: string, input: GenerateInput) {
+export async function createGenerateJob(owner: string, input: GenerateInput, opts: { start?: boolean } = {}) {
   const row = await db.insert<JobData>("jobs", owner, {
     type: "generate", status: "queued", input, heartbeat: new Date().toISOString(),
     steps: AGENTS.map((agent) => ({ agent, status: "pending" })),
   });
   // Run in the background of this server process; progress is persisted on every step.
-  void runPipeline(owner, row).catch(() => {});
+  if (opts.start !== false) void runPipeline(owner, row).catch(() => {});
   return row;
 }
 
 const langName = (code: string) => LANGUAGES.find((l) => l.code === code)?.name ?? code;
 const useAi = (input: GenerateInput) => input.llmProvider && input.llmProvider !== "none";
 
-async function runPipeline(owner: string, row: Row<JobData>) {
+export async function runPipeline(owner: string, row: Row<JobData>) {
   const job = new Job(row);
   const input = row.data.input as GenerateInput;
   job.row.data.status = "running";
@@ -97,6 +107,9 @@ async function runPipeline(owner: string, row: Row<JobData>) {
       if (!p) throw new Error("Product not found in brand kit");
       Object.assign(product, { name: p.name, description: p.description, price: p.price, oldPrice: p.oldPrice, currency: p.currency, url: p.url, features: p.features });
       input.assetIds = [...(input.assetIds ?? []), ...p.imageAssetIds];
+    } else if (input.source === "data" && input.productData) {
+      const d = input.productData;
+      Object.assign(product, { name: d.name, brandName: d.brandName || d.shopName || product.brandName, description: d.description, url: d.url, price: d.price, oldPrice: d.oldPrice, currency: d.currency, features: d.features, rating: d.rating });
     } else if (input.source === "text" || input.source === "image") {
       product.description = input.prompt ?? "";
       product.name = (input.prompt ?? "").split(/[.!?\n]/)[0].slice(0, 50) || "New product";
@@ -104,13 +117,15 @@ async function runPipeline(owner: string, row: Row<JobData>) {
     if (kit?.data.website && !product.url) product.url = kit.data.website;
     const colors = { ...(kit?.data.colors ?? { primary: "#7c5cff", secondary: "#22d3ee", accent: "#f97316", background: "#0b0d12", text: "#ffffff" }) };
     let colorSource = kit ? "brand kit" : "default palette";
-    if (!kit && scraped?.colors.length) {
-      colors.primary = scraped.colors[0];
-      colors.secondary = scraped.colors[1] ?? colors.secondary;
-      colors.accent = scraped.colors[2] ?? colors.accent;
+    const siteColors = scraped?.colors.length ? scraped.colors : input.productData?.colors ?? [];
+    if (!kit && siteColors.length) {
+      colors.primary = siteColors[0];
+      colors.secondary = siteColors[1] ?? colors.secondary;
+      colors.accent = siteColors[2] ?? colors.accent;
       colorSource = "website CSS / theme-color";
     }
-    const fonts = { heading: kit?.data.fonts.heading || scraped?.fonts[0] || "", body: kit?.data.fonts.body || scraped?.fonts[1] || scraped?.fonts[0] || "" };
+    const siteFonts = scraped?.fonts.length ? scraped.fonts : input.productData?.fonts ?? [];
+    const fonts = { heading: kit?.data.fonts.heading || siteFonts[0] || "", body: kit?.data.fonts.body || siteFonts[1] || siteFonts[0] || "" };
     await job.done("brand-designer", { engine: "code", message: `Brand colors from ${colorSource}`, output: { colors, fonts, platform: scraped?.platform, sources: scraped?.sources, warnings: scraped?.warnings } });
 
     /* ---------------- Product Photographer: import & prepare imagery ---------------- */
@@ -120,11 +135,13 @@ async function runPipeline(owner: string, row: Row<JobData>) {
       const a = await db.getOwned<MediaData>("media", id, owner);
       if (a && a.data.kind === "image") assets.push(a);
     }
-    if (scraped?.images.length) {
+    const remoteImages = scraped?.images.length ? scraped.images : input.productData?.images ?? [];
+    const sourcePage = scraped?.url ?? input.productData?.url ?? "";
+    if (remoteImages.length) {
       if (!input.rightsConfirmed) throw new Error("Please confirm you have the rights to use the images from this website.");
-      for (const u of scraped.images.slice(0, 6)) {
+      for (const u of remoteImages.slice(0, 6)) {
         try {
-          assets.push(await importRemoteImage(owner, u, { brandKitId: input.brandKitId, rightsNote: `Imported from ${scraped.url}; rights confirmed by user` }));
+          assets.push(await importRemoteImage(owner, u, { brandKitId: input.brandKitId, rightsNote: `Imported from ${sourcePage}; rights confirmed by user` }));
         } catch {
           /* skip broken image */
         }
@@ -153,14 +170,29 @@ async function runPipeline(owner: string, row: Row<JobData>) {
         photoMsg = "Created clean studio composition (local processing) + originals";
       }
     }
+    // cut-out versions (transparent background) look far better on animated backgrounds
+    const photoAssets = [...finalImages];
+    const cutouts: Row<MediaData>[] = [];
+    for (const a of finalImages.filter((x) => x.data.source !== "ai" && !/studio/.test(x.data.name)).slice(0, 3)) {
+      try {
+        const png = await cutout(await readFileBuffer(a.data.key));
+        if (png) cutouts.push(await saveMedia(owner, png, "image/png", { name: `${a.data.name} (cut-out)`, source: "generated", provider: "cutout", rights: a.data.rights, brandKitId: input.brandKitId }));
+      } catch {
+        /* keep original */
+      }
+    }
+    if (cutouts.length) {
+      photoMsg += ` · ${cutouts.length} cut-out(s) with transparent background`;
+      finalImages = [...cutouts, ...finalImages.filter((x) => x.data.source === "ai")];
+    }
     product.images = finalImages.map((a) => mediaUrl(a.id));
     product.imageAssetIds = finalImages.map((a) => a.id);
     if (kit?.data.logoAssetId) {
       product.logo = mediaUrl(kit.data.logoAssetId);
       product.logoAssetId = kit.data.logoAssetId;
-    } else if (scraped?.logo && input.rightsConfirmed) {
+    } else if ((scraped?.logo || input.productData?.logo) && input.rightsConfirmed) {
       try {
-        const l = await importRemoteImage(owner, scraped.logo, { name: "Logo", rightsNote: `Logo from ${scraped.url}` });
+        const l = await importRemoteImage(owner, (scraped?.logo || input.productData?.logo)!, { name: "Logo", rightsNote: `Logo from ${sourcePage}` });
         if ((l.data.width ?? 0) >= 64) {
           product.logo = mediaUrl(l.id);
           product.logoAssetId = l.id;
@@ -176,7 +208,37 @@ async function runPipeline(owner: string, row: Row<JobData>) {
       if (c[1]) colors.secondary = c[1];
       colorSource = "product image";
     }
-    await job.done("product-photographer", { engine: photoEngine, provider: photoEngine === "ai" ? "openai" : undefined, costUsd: photoCost, message: photoMsg, output: { assetIds: product.imageAssetIds, logo: product.logoAssetId } });
+    // optional AI product video clip (image-to-video) for the product scene
+    let clipAssetId: string | undefined;
+    if (input.aiClipProvider && finalImages[0]) {
+      await job.start("product-photographer", `${photoMsg} · generating AI video clip (${input.aiClipProvider})…`);
+      try {
+        const jpg = await sharp(await readFileBuffer(finalImages[0].data.key)).resize(1280, 1280, { fit: "inside" }).jpeg({ quality: 90 }).toBuffer();
+        const b64 = jpg.toString("base64");
+        const aspect = input.aspects[0] === "16:9" ? "16:9" : input.aspects[0] === "1:1" ? "1:1" : "9:16";
+        const taskId = await startVideo(owner, input.aiClipProvider, { prompt: `Smooth cinematic product shot of ${product.name}: slow camera orbit, soft studio light, the product stays exactly as in the image.`, image: { base64: b64, mime: "image/jpeg", dataUri: `data:image/jpeg;base64,${b64}` }, aspect, seconds: 5 });
+        const deadline = Date.now() + 12 * 60_000;
+        for (;;) {
+          await new Promise((r) => setTimeout(r, 8000));
+          await job.save();
+          const st = await pollVideo(owner, input.aiClipProvider, taskId);
+          if (st.status === "succeeded" && st.url) {
+            const r = await fetch(st.url, { headers: st.downloadHeaders, signal: AbortSignal.timeout(120000) });
+            if (!r.ok) throw new Error(`download ${r.status}`);
+            const v = await saveMedia(owner, Buffer.from(await r.arrayBuffer()), "video/mp4", { name: `${product.name} – AI clip`, source: "ai", provider: input.aiClipProvider, rights: { confirmed: true, note: `Generated with ${input.aiClipProvider}` }, brandKitId: input.brandKitId });
+            clipAssetId = v.id;
+            product.heroVideo = { src: mediaUrl(v.id), assetId: v.id };
+            photoMsg += " + AI video clip";
+            break;
+          }
+          if (st.status === "failed") throw new Error(st.error ?? "failed");
+          if (Date.now() > deadline) throw new Error("timed out after 12 minutes");
+        }
+      } catch (e) {
+        photoMsg += ` · AI clip skipped: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+    await job.done("product-photographer", { engine: photoEngine === "ai" || clipAssetId ? "ai" : photoEngine, provider: clipAssetId ? input.aiClipProvider : photoEngine === "ai" ? "openai" : undefined, costUsd: photoCost, message: photoMsg, output: { assetIds: product.imageAssetIds, logo: product.logoAssetId, clip: clipAssetId } });
     if (!product.name) product.name = scraped?.siteName ?? "Product";
     const productContext = JSON.stringify({ name: product.name, brand: product.brandName, description: product.description.slice(0, 1500), price: product.price, oldPrice: product.oldPrice, currency: product.currency, features: product.features, rating: product.rating, url: product.url, toneOfVoice: kit?.data.toneOfVoice });
     const honesty = "Only use facts present in the product data. Never invent prices, discounts, ratings, reviews, testimonials, certifications or statistics. Do not copy existing advertisements or slogans of other brands.";
@@ -258,6 +320,7 @@ async function runPipeline(owner: string, row: Row<JobData>) {
     await job.start("video-editor", "Assembling timeline");
     const groupId = `grp_${Date.now().toString(36)}`;
     const projectIds: string[] = [];
+    const musicAssetIds: string[] = [];
     const editorNotes: string[] = [];
     for (let i = 0; i < written.length; i++) {
       const w = written[i];
@@ -275,8 +338,13 @@ async function runPipeline(owner: string, row: Row<JobData>) {
         const doc = buildProject(brief);
         if (input.language === "ar") doc.fonts = Array.from(new Set([...doc.fonts, "Cairo"]));
         if (vo) addVoice(doc, brief, vo, input.captions);
-        if (input.musicAssetId) {
-          const m = await db.getOwned<MediaData>("media", input.musicAssetId, owner);
+        let musicId = input.musicAssetId;
+        if (!musicId && input.music === "auto") {
+          // one original track per variant, reused across formats
+          musicId = musicAssetIds[i] ?? (musicAssetIds[i] = await makeMusic(owner, getStyle(concepts[i].style).musicMood, input.seconds, `${product.name}-${i}`));
+        }
+        if (musicId) {
+          const m = await db.getOwned<MediaData>("media", musicId, owner);
           if (m) {
             doc.tracks.find((t) => t.name === "Music")!.clips.push(makeClip("audio", { name: m.data.name, start: 0, duration: doc.durationInFrames, in: anim("none", 0), props: { src: mediaUrl(m.id), assetId: m.id, role: "music", volume: vo ? 0.18 : 0.5, fadeIn: 0.5, fadeOut: 1.2, trimStart: 0 } }));
           }
@@ -287,7 +355,7 @@ async function runPipeline(owner: string, row: Row<JobData>) {
       }
     }
     await job.done("motion-designer", { engine: "code", message: `${projectIds.length} animated project(s) across ${input.aspects.join(", ")}` });
-    await job.done("video-editor", { engine: "code", message: editorNotes.join(" ") || "Timeline assembled: transitions, captions, audio" + (input.musicAssetId ? ", music ducked under voice" : "") });
+    await job.done("video-editor", { engine: "code", message: editorNotes.join(" ") || "Timeline assembled: transitions, captions, audio" + (input.musicAssetId || input.music === "auto" ? ", music (ducked under voice-over)" : "") });
 
     /* ---------------- Ad Analyst ---------------- */
     await job.start("ad-analyst", "Scoring variants");
@@ -299,8 +367,18 @@ async function runPipeline(owner: string, row: Row<JobData>) {
     }
     await job.done("ad-analyst", { engine: "rules", output: scores, message: `Scores: ${scores.map((s) => s.score).join(", ")} (rule-based checks on the timeline)` });
 
+    const renderIds: string[] = [];
+    if (input.autoRender) {
+      for (const pid of projectIds) {
+        const p = await db.get<ProjectData>("projects", pid);
+        if (!p) continue;
+        const r = await db.insert<RenderData>("renders", owner, { projectId: pid, projectName: p.data.doc.name, status: "queued", progress: 0, resolution: input.autoRender, codec: "h264", attempts: 0, maxAttempts: 3, doc: p.data.doc, log: [`Queued automatically ${new Date().toISOString()}`] });
+        await enqueueRender(r.id);
+        renderIds.push(r.id);
+      }
+    }
     job.row.data.status = "done";
-    job.row.data.result = { projectIds, groupId };
+    job.row.data.result = { projectIds, groupId, renderIds, photoAssetIds: photoAssets.map((a) => a.id), musicAssetIds: musicAssetIds.filter(Boolean), clipAssetId };
     await job.save();
   } catch (e) {
     const running = job.row.data.steps.find((s) => s.status === "running");
@@ -332,3 +410,26 @@ function addVoice(doc: ProjectDoc, brief: AdBrief, vo: ({ assetId: string; durat
 }
 
 export type { SceneKind };
+
+const exec = promisify(execFile);
+/** Generates an original background track and stores it in the media library (MP3 when ffmpeg is available). */
+async function makeMusic(owner: string, mood: string, seconds: number, seedText: string): Promise<string> {
+  let seed = 0;
+  for (const ch of seedText) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const wav = generateMusic({ mood, seconds: seconds + 1, seed });
+  let data: Buffer = wav;
+  let mime = "audio/wav";
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "music-"));
+  try {
+    await fs.writeFile(path.join(dir, "in.wav"), wav);
+    await exec("ffmpeg", ["-y", "-loglevel", "error", "-i", path.join(dir, "in.wav"), "-codec:a", "libmp3lame", "-b:a", "192k", path.join(dir, "out.mp3")]);
+    data = await fs.readFile(path.join(dir, "out.mp3"));
+    mime = "audio/mpeg";
+  } catch {
+    /* keep WAV */
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+  const m = await saveMedia(owner, data, mime, { name: `Music – ${mood} (${seconds}s)`, source: "generated", provider: "music-generator", rights: { confirmed: true, note: "Original music generated by Ad Studio — free to use" } });
+  return m.id;
+}

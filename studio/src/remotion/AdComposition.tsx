@@ -61,7 +61,8 @@ const ClipView: React.FC<{ clip: Clip }> = ({ clip }) => {
     width: fullFrame ? "100%" : t.width,
     height: fullFrame ? "100%" : t.height,
     opacity: Math.min(1, t.opacity),
-    transform: `perspective(1600px) rotate(${t.rotation}deg) rotateY(${t.rotateY}deg) scale(${t.scale})`,
+    // 2D transforms unless a 3D flip is animating: avoids compositor tiling glitches in headless Chromium
+    transform: Math.abs(t.rotateY) > 0.01 ? `perspective(1600px) rotate(${t.rotation}deg) rotateY(${t.rotateY}deg) scale(${t.scale})` : `rotate(${t.rotation}deg) scale(${t.scale})`,
     transformOrigin: "center center",
     filter: filter || undefined,
     clipPath: t.clip < 1 ? `inset(0 ${(1 - t.clip) * 100}% 0 0)` : undefined,

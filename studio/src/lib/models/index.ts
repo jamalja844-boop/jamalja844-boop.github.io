@@ -78,7 +78,7 @@ export interface AgentStep {
 }
 
 export interface GenerateInput {
-  source: "url" | "product" | "image" | "text";
+  source: "url" | "product" | "image" | "text" | "data";
   url?: string;
   prompt?: string;
   assetIds?: string[];
@@ -93,17 +93,26 @@ export interface GenerateInput {
   ttsProvider: string;
   voice?: string;
   musicAssetId?: string;
+  /** "auto" = generate original background music for every video */
+  music?: "auto" | "none";
+  /** product read from a webshop scan (source "data") */
+  productData?: import("../server/shop").ShopProduct & { shopName?: string; logo?: string; colors?: string[]; fonts?: string[] };
+  /** generate an AI video clip of the product (runway | gemini | kling) */
+  aiClipProvider?: string;
+  /** queue MP4 renders as soon as the projects are ready */
+  autoRender?: "1080p" | "4k";
+  batchId?: string;
   captions: boolean;
   productPhoto: "none" | "studio" | "openai";
   rightsConfirmed: boolean;
 }
 
 export interface JobData {
-  type: "generate" | "aivideo";
+  type: "generate" | "aivideo" | "batch";
   status: "queued" | "running" | "done" | "failed";
   steps: AgentStep[];
   input: unknown;
-  result?: { projectIds?: string[]; assetId?: string; groupId?: string };
+  result?: { projectIds?: string[]; assetId?: string; groupId?: string; renderIds?: string[]; photoAssetIds?: string[]; musicAssetIds?: string[]; clipAssetId?: string; childJobIds?: string[] };
   error?: string;
   heartbeat: string;
   external?: { provider: string; taskId: string };
