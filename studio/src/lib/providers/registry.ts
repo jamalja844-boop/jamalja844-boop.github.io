@@ -71,6 +71,16 @@ export const PROVIDERS: ProviderDef[] = [
     settings: [{ key: "model", label: "Model", default: "grok-4" }, costField("costInputPerMTok", "Cost / 1M input tokens"), costField("costOutputPerMTok", "Cost / 1M output tokens")],
   },
   {
+    id: "nvidia", name: "NVIDIA (free API key)", categories: ["llm"], status: "available",
+    docsUrl: "https://docs.api.nvidia.com/nim/reference/llm-apis", pricingUrl: "https://build.nvidia.com",
+    credentials: [{ key: "apiKey", label: "API key", secret: true, placeholder: "nvapi-...", help: "Free key: sign in at build.nvidia.com, open a model and click 'Get API Key'. Free use is meant for trying out and has rate limits." }],
+    settings: [
+      { key: "model", label: "Model", default: "meta/llama-3.3-70b-instruct", options: ["meta/llama-3.3-70b-instruct", "meta/llama-3.1-405b-instruct", "meta/llama-3.1-8b-instruct", "nvidia/llama-3.1-nemotron-70b-instruct", "mistralai/mixtral-8x22b-instruct-v0.1", "deepseek-ai/deepseek-r1"], help: "Any chat model from build.nvidia.com works; 'Test connection' lists them." },
+      costField("costInputPerMTok", "Cost / 1M input tokens", "0"),
+      costField("costOutputPerMTok", "Cost / 1M output tokens", "0"),
+    ],
+  },
+  {
     id: "google-tts", name: "Google Cloud Text-to-Speech", categories: ["tts"], status: "available",
     docsUrl: "https://cloud.google.com/text-to-speech/docs", pricingUrl: "https://cloud.google.com/text-to-speech/pricing",
     credentials: [{ key: "apiKey", label: "Google Cloud API key", secret: true, help: "Key must have the Cloud Text-to-Speech API enabled." }],

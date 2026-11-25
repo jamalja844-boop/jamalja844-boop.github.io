@@ -49,7 +49,7 @@ function CreateInner() {
     api<Prov[]>("/api/settings/providers").then((p) => {
       setProvs(p);
       const ok = (id: string) => p.some((x) => x.id === id && x.configured && x.enabled);
-      const l = ["anthropic", "openai", "gemini", "xai"].find(ok);
+      const l = ["anthropic", "openai", "gemini", "xai", "nvidia"].find(ok);
       if (l) setLlm(l);
       const v = ["elevenlabs", "openai", "google-tts"].find(ok);
       if (v) setTts(v);

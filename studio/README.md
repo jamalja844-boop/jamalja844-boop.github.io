@@ -21,6 +21,10 @@ Three.js (3D) · Fabric.js (canvas interaction) · PostgreSQL/Supabase · Redis 
    - Mac: open Terminal, sleep `start-mac-linux.sh` in het venster en druk Enter
      (of `cd` naar de map en typ `./start-mac-linux.sh`).
 
+**Gratis AI-teksten:** maak op https://build.nvidia.com een gratis account, open een model (bijv.
+Llama 3.3 70B), klik **Get API Key** en plak de sleutel (`nvapi-…`) in de studio bij **AI-instellingen →
+NVIDIA**. Gratis gebruik is bedoeld om te proberen en heeft limieten.
+
 De eerste keer installeert het script alles en bouwt het de app (5–10 minuten). Daarna opent
 http://localhost:3000 vanzelf; maak een account aan. Volgende keren start het binnen een minuut.
 Laat het venster open zolang je de studio gebruikt (dat venster maakt ook de MP4's en plaatst de geplande posts).
@@ -148,6 +152,7 @@ the official docs and pricing.
 | OpenAI | agents, TTS, AI product photos | Chat Completions, Audio Speech, Images Edits |
 | Google Gemini | agents, **Google Veo** video | `generateContent`, `predictLongRunning` |
 | xAI Grok | agents | OpenAI-compatible Chat Completions |
+| **NVIDIA (free key)** | agents, captions | build.nvidia.com API catalog, OpenAI-compatible `integrate.api.nvidia.com/v1` |
 | ElevenLabs | voice-over with exact word timestamps | `text-to-speech/{voice}/with-timestamps` |
 | Google Cloud TTS | voice-over with exact word timing | `text:synthesize` + SSML marks |
 | Runway | image-to-video | `/v1/image_to_video` + `/v1/tasks` |

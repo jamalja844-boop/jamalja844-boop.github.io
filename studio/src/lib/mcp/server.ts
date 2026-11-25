@@ -67,7 +67,7 @@ export function buildMcpServer(owner: string) {
     const scan = await scanShop(a.shop_url, 100);
     const chosen = a.product_ids?.length ? scan.products.filter((p) => a.product_ids!.includes(p.id)) : scan.products.slice(0, a.limit);
     if (!chosen.length) throw new Error("No matching products found; call scan_shop first and pass its product ids");
-    const llm = (await firstConfigured(owner, ["anthropic", "openai", "gemini", "xai"])) ?? "none";
+    const llm = (await firstConfigured(owner, ["anthropic", "openai", "gemini", "xai", "nvidia"])) ?? "none";
     const tts = a.voice_over ? (await firstConfigured(owner, ["elevenlabs", "openai", "google-tts"])) ?? "none" : "none";
     const opts = { style: a.style, variants: 1, seconds: a.seconds, aspects: a.formats, language: a.language, llmProvider: llm, ttsProvider: tts, music: a.music ? "auto" : "none", captions: true, productPhoto: "studio", autoRender: a.resolution, rightsConfirmed: true } as unknown as Parameters<typeof createShopBatch>[3];
     const batch = await createShopBatch(owner, { shopName: scan.shopName, logo: scan.logo, colors: scan.colors.filter((c) => /^#[0-9a-f]{6}$/i.test(c)), fonts: scan.fonts }, chosen, opts);
@@ -111,7 +111,7 @@ export function buildMcpServer(owner: string) {
     description: "Writes a caption, title and hashtags for a video from the facts in the ad (no invented claims). Uses the configured AI text provider if any.",
     inputSchema: { video_id: z.string(), platform: z.enum(PLATFORMS).optional(), language: z.enum(["nl", "en", "ar", "fr", "de", "es"]).optional() },
     annotations: { readOnlyHint: true },
-  }, wrap(async ({ video_id, platform, language }) => suggestCaption(owner, video_id, { platform, language, llmProvider: await firstConfigured(owner, ["anthropic", "openai", "gemini", "xai"]) })));
+  }, wrap(async ({ video_id, platform, language }) => suggestCaption(owner, video_id, { platform, language, llmProvider: await firstConfigured(owner, ["anthropic", "openai", "gemini", "xai", "nvidia"]) })));
 
   server.registerTool("list_social_accounts", {
     title: "Connected social accounts",
@@ -142,7 +142,7 @@ export function buildMcpServer(owner: string) {
     const r = await routes(owner);
     const missing = a.platforms.filter((p) => !r[p]);
     if (missing.length) throw new Error(`Not connected: ${missing.join(", ")}`);
-    const rows = await autoSchedule(owner, { ...a, llm_provider: await firstConfigured(owner, ["anthropic", "openai", "gemini", "xai"]) }, "mcp");
+    const rows = await autoSchedule(owner, { ...a, llm_provider: await firstConfigured(owner, ["anthropic", "openai", "gemini", "xai", "nvidia"]) }, "mcp");
     return rows.map((p) => ({ post_id: p.id, video: p.data.title, scheduled_at: p.data.scheduledAt, platforms: p.data.platforms }));
   }));
 

@@ -39,7 +39,7 @@ function ShopInner() {
   useEffect(() => {
     api<Prov[]>("/api/settings/providers").then((p) => {
       setProvs(p);
-      const l = ["anthropic", "openai", "gemini", "xai"].find((id) => ok(id, p));
+      const l = ["anthropic", "openai", "gemini", "xai", "nvidia"].find((id) => ok(id, p));
       if (l) setLlm(l);
       const v = ["elevenlabs", "openai", "google-tts"].find((id) => ok(id, p));
       if (v) setTts(v);

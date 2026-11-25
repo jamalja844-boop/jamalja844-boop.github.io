@@ -24,7 +24,8 @@ const cost = (settings: Record<string, string>, i: number, o: number) => {
 };
 
 function extractJson(text: string): unknown {
-  const t = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  // reasoning models (e.g. DeepSeek-R1) put their thinking in <think> tags before the answer
+  const t = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
   try {
     return JSON.parse(t);
   } catch {
@@ -82,6 +83,21 @@ export async function generateJson<S extends z.ZodType>(owner: string, providerI
     return { data: schema.parse(extractJson(text)), provider: providerId, model: j.model ?? model, inputTokens: j.usage?.prompt_tokens ?? 0, outputTokens: j.usage?.completion_tokens ?? 0, costUsd: cost(settings, j.usage?.prompt_tokens ?? 0, j.usage?.completion_tokens ?? 0) };
   }
 
+  if (providerId === "nvidia") {
+    // NVIDIA API catalog (build.nvidia.com): OpenAI-compatible chat completions
+    const j = await postJson("https://integrate.api.nvidia.com/v1/chat/completions", { Authorization: `Bearer ${creds.values.apiKey}` }, {
+      model,
+      messages: [{ role: "system", content: sys }, { role: "user", content: user }],
+      temperature: 0.4,
+      max_tokens: 4096,
+      stream: false,
+    });
+    const text = j.choices?.[0]?.message?.content ?? "";
+    const i = j.usage?.prompt_tokens ?? 0;
+    const o = j.usage?.completion_tokens ?? 0;
+    return { data: schema.parse(extractJson(text)), provider: providerId, model: j.model ?? model, inputTokens: i, outputTokens: o, costUsd: cost(settings, i, o) };
+  }
+
   if (providerId === "gemini") {
     const j = await postJson(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, { "x-goog-api-key": creds.values.apiKey }, {
       systemInstruction: { parts: [{ text: sys }] },
@@ -118,6 +134,13 @@ export async function testProvider(providerId: string, values: Record<string, st
       case "xai": {
         const j = await get("https://api.x.ai/v1/models", { Authorization: `Bearer ${values.apiKey}` });
         return { ok: true, message: "Connected", models: j.data.map((m: { id: string }) => m.id) };
+      }
+      case "nvidia": {
+        // the model list is public, so also make a 1-token call to check the key itself
+        const j = await get("https://integrate.api.nvidia.com/v1/models", { Authorization: `Bearer ${values.apiKey}` });
+        const r = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", { method: "POST", headers: { Authorization: `Bearer ${values.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ model: settings.model || "meta/llama-3.3-70b-instruct", messages: [{ role: "user", content: "Say OK" }], max_tokens: 1 }), signal: AbortSignal.timeout(30000) });
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+        return { ok: true, message: "Connected", models: j.data.map((m: { id: string }) => m.id).sort() };
       }
       case "gemini": {
         const j = await get("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { "x-goog-api-key": values.apiKey });
