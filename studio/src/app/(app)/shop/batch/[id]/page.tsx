@@ -48,7 +48,7 @@ export default function BatchPage({ params }: { params: Promise<{ id: string }> 
   const agentName = (a: string) => (t.agents as Record<string, string>)[a] ?? a;
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader title={t.shop.making} subtitle={`${ready} / ${total} MP4 ${t.shop.ready.toLowerCase()}`} actions={<Link href="/shop" className="btn-ghost">{t.shop.newShop}</Link>} />
+      <PageHeader title={t.shop.making} subtitle={`${ready} / ${total} MP4 ${t.shop.ready.toLowerCase()}`} actions={<>{ready > 0 && <Link href={`/social?tab=auto&videos=${b.items.flatMap((i) => i.renders.filter((r) => r.status === "done").map((r) => r.id)).join(",")}`} className="btn-primary">📅 {t.social.planBatch}</Link>}<Link href="/shop" className="btn-ghost">{t.shop.newShop}</Link></>} />
       <div className="mb-6"><Progress value={(ready / Math.max(1, total)) * 100} /></div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {b.items.map((it) => {

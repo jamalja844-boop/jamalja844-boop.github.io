@@ -45,6 +45,37 @@ Open http://localhost:3000, create an account, then the fastest way:
 Voice-over needs an API key for ElevenLabs, OpenAI or Google Text-to-Speech (AI Settings). Without a key the
 videos have music and on-screen text/subtitles but no spoken voice.
 
+### Social media: schedule and post automatically
+
+**Social media** (menu) → connect platforms in **AI Settings → Social media**, then plan videos per post or
+let the planner spread them over days and times (**Automatisch plannen**, also available as
+**Alles inplannen** on the webshop results page). The worker publishes each post at its time, retries failed
+platforms (3 attempts, 10 minutes apart) and stores the post links.
+
+| Platform | Connection | What you need |
+|---|---|---|
+| YouTube (Shorts) | Data API v3 resumable upload | Google OAuth client ID/secret + refresh token (`youtube.upload`) |
+| TikTok | Content Posting API (direct post) | TikTok app client key/secret + refresh token (`video.publish`). Apps TikTok has not audited can only post **privately** |
+| Instagram (Reels) | Graph API content publishing | Business/Creator account, long-lived token, IG user ID |
+| Facebook Page | Graph API page videos | Page access token + page ID |
+| LinkedIn, X, Pinterest, Threads, Bluesky (and the above) | Ayrshare | one Ayrshare API key; link your accounts in Ayrshare |
+
+Instagram, Facebook and Ayrshare download the video from the studio, so `APP_URL` must be a public https
+address. YouTube and TikTok receive the file directly.
+
+### Claude and Codex / ChatGPT (MCP)
+
+The studio is an MCP server at `/api/mcp` (Streamable HTTP). Create a token under **Claude & Codex** and
+copy the ready-made configuration for Claude Code, Claude Desktop/claude.ai, Codex CLI or ChatGPT. Tools:
+`scan_shop`, `create_videos`, `get_video_job`, `list_videos`, `suggest_caption`, `list_social_accounts`,
+`schedule_post`, `auto_schedule`, `list_posts`, `cancel_post`. Tokens are stored as SHA-256 hashes and can
+be revoked. For clients that cannot send headers there is a secret URL `/api/mcp/t/<token>`.
+
+```bash
+claude mcp add --transport http ad-studio https://your-studio.example.com/api/mcp --header "Authorization: Bearer ads_..."
+npm run mcp:smoke -- http://localhost:3000 ads_... https://your-shop.example.com   # end-to-end check with the official MCP client
+```
+
 ### Step by step
 
 1. **AI Settings** → add the providers you want (optional — without any key the template engine writes the copy).

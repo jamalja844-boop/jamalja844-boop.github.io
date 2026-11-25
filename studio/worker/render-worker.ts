@@ -12,6 +12,7 @@ import { prepareForRender } from "../src/lib/server/renderPrep";
 import { QUEUE_NAME } from "../src/lib/server/queue";
 import type { MediaData } from "../src/lib/server/media";
 import type { RenderData } from "../src/lib/models";
+import { runDuePosts } from "../src/lib/social/posts";
 
 let serveUrl: string | null = null;
 let busy = false;
@@ -109,6 +110,9 @@ async function main() {
   await getBundle();
   await recoverStale();
   setInterval(() => recoverStale().catch(() => {}), 60_000);
+  // social media scheduler: publishes posts whose time has come
+  setInterval(() => runDuePosts().catch((e) => console.error("[worker] social:", e)), 15_000);
+  console.log("[worker] social media scheduler active");
   if (config.redisUrl) {
     const { Worker } = await import("bullmq");
     const IORedis = (await import("ioredis")).default;

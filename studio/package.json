@@ -10,10 +10,12 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.mts",
-    "smoke": "tsx scripts/smoke-render.ts smoke-out"
+    "smoke": "tsx scripts/smoke-render.ts smoke-out",
+    "mcp:smoke": "tsx scripts/mcp-smoke.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.14.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@react-three/fiber": "^9.8.2",
     "@remotion/bundler": "^4.0.547",
     "@remotion/player": "^4.0.547",

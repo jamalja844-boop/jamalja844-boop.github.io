@@ -18,7 +18,8 @@ async function valid(token: string | undefined) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   // CSRF: state-changing API calls must come from our own origin
-  if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+  // the MCP endpoint is called by AI clients (not browsers) and authenticates with its own tokens
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/mcp") && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
     const origin = req.headers.get("origin");
     if (origin && origin !== req.nextUrl.origin && origin !== process.env.APP_URL) {
       return NextResponse.json({ error: "Cross-origin request blocked" }, { status: 403 });

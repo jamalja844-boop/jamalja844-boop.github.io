@@ -1,5 +1,5 @@
 // Provider catalogue shared by the settings UI and the server. No secrets in here.
-export type ProviderCategory = "llm" | "tts" | "image" | "video" | "commerce";
+export type ProviderCategory = "llm" | "tts" | "image" | "video" | "commerce" | "social";
 
 export interface ProviderField {
   key: string;
@@ -118,6 +118,44 @@ export const PROVIDERS: ProviderDef[] = [
     docsUrl: "https://woocommerce.github.io/woocommerce-rest-api-docs/",
     credentials: [{ key: "consumerKey", label: "Consumer key", secret: true, placeholder: "ck_..." }, { key: "consumerSecret", label: "Consumer secret", secret: true, placeholder: "cs_..." }],
     settings: [{ key: "siteUrl", label: "Store URL", placeholder: "https://shop.example.com" }],
+  },
+  {
+    id: "social-youtube", name: "YouTube (Shorts)", categories: ["social"], status: "available",
+    docsUrl: "https://developers.google.com/youtube/v3/guides/uploading_a_video",
+    credentials: [
+      { key: "clientId", label: "OAuth client ID", secret: true },
+      { key: "clientSecret", label: "OAuth client secret", secret: true },
+      { key: "refreshToken", label: "Refresh token", secret: true, help: "OAuth refresh token with the youtube.upload scope (e.g. from Google's OAuth Playground with your own client)." },
+    ],
+    settings: [{ key: "privacy", label: "Visibility", default: "public", options: ["public", "unlisted", "private"] }, { key: "categoryId", label: "Category ID", default: "22" }],
+  },
+  {
+    id: "social-tiktok", name: "TikTok", categories: ["social"], status: "available",
+    docsUrl: "https://developers.tiktok.com/doc/content-posting-api-get-started",
+    credentials: [
+      { key: "clientKey", label: "Client key", secret: true },
+      { key: "clientSecret", label: "Client secret", secret: true },
+      { key: "refreshToken", label: "Refresh token", secret: true, help: "From your TikTok app's Login Kit (scope video.publish). Apps that TikTok has not audited can only post privately." },
+    ],
+    settings: [{ key: "privacy", label: "Privacy", default: "SELF_ONLY", options: ["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY"] }],
+  },
+  {
+    id: "social-instagram", name: "Instagram (Reels)", categories: ["social"], status: "available",
+    docsUrl: "https://developers.facebook.com/docs/instagram-platform/content-publishing",
+    credentials: [{ key: "accessToken", label: "Access token", secret: true, help: "Long-lived token with instagram_content_publish for a Business/Creator account." }],
+    settings: [{ key: "igUserId", label: "Instagram user ID" }, { key: "graphVersion", label: "Graph API version", default: "v23.0" }],
+  },
+  {
+    id: "social-facebook", name: "Facebook Page", categories: ["social"], status: "available",
+    docsUrl: "https://developers.facebook.com/docs/video-api/guides/publishing",
+    credentials: [{ key: "pageAccessToken", label: "Page access token", secret: true }],
+    settings: [{ key: "pageId", label: "Page ID" }, { key: "graphVersion", label: "Graph API version", default: "v23.0" }],
+  },
+  {
+    id: "ayrshare", name: "Ayrshare (all networks with one key)", categories: ["social"], status: "available",
+    docsUrl: "https://www.ayrshare.com/docs/apis/post/post",
+    credentials: [{ key: "apiKey", label: "API key", secret: true, help: "Connect your social accounts in Ayrshare; posts to LinkedIn, X, Pinterest, Threads, Bluesky and the others go through it." }],
+    settings: [],
   },
 ];
 

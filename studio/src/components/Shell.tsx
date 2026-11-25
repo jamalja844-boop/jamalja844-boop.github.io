@@ -7,6 +7,8 @@ import type { SessionUser } from "@/lib/server/auth";
 
 const NAV: { href: string; key: keyof ReturnType<typeof useT>["t"]["nav"]; icon: string; group?: string }[] = [
   { href: "/shop", key: "shop" as never, icon: "🛒" },
+  { href: "/social", key: "social" as never, icon: "📅" },
+  { href: "/connect", key: "connect" as never, icon: "🔌" },
   { href: "/", key: "dashboard", icon: "◧" },
   { href: "/create", key: "create", icon: "✦" },
   { href: "/ai-video", key: "aiVideo", icon: "◉" },
@@ -45,7 +47,7 @@ function Inner({ user, children }: { user: SessionUser; children: React.ReactNod
             return (
               <Link key={n.key} href={n.href} className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${n.group ? "pl-7 text-xs text-muted" : ""} ${active ? "bg-accent/20 text-white" : "text-gray-300 hover:bg-panel2"}`}>
                 <span className="w-4 text-center opacity-70">{n.icon}</span>
-                {n.key === ("shop" as never) ? t.shop.nav : t.nav[n.key]}
+                {n.key === ("shop" as never) ? t.shop.nav : n.key === ("social" as never) ? t.social.nav : n.key === ("connect" as never) ? t.connect.nav : t.nav[n.key]}
               </Link>
             );
           })}

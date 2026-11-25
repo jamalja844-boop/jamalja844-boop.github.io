@@ -75,13 +75,14 @@ export default function Settings() {
     ["Text (LLM)", PROVIDERS.filter((p) => p.categories.includes("llm"))],
     ["Voice-over (TTS)", PROVIDERS.filter((p) => p.categories.includes("tts") && !p.categories.includes("llm"))],
     ["Video", PROVIDERS.filter((p) => p.categories.includes("video") && !p.categories.includes("llm"))],
+    ["Social media", PROVIDERS.filter((p) => p.categories.includes("social"))],
     [t.settings.integrations, PROVIDERS.filter((p) => p.categories.includes("commerce"))],
   ];
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader title={t.settings.title} subtitle={t.settings.subtitle} />
       {groups.map(([g, defs]) => (
-        <div key={g} className="mb-8">
+        <div key={g} id={g === "Social media" ? "social" : undefined} className="mb-8">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">{g}</h2>
           <div className="grid gap-4 lg:grid-cols-2">{defs.map((d) => <ProviderCard key={d.id} def={d} st={state.find((s) => s.id === d.id)} reload={load} />)}</div>
         </div>

@@ -7,7 +7,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { config } from "./config";
 
-export type CollectionName = "users" | "projects" | "versions" | "brandkits" | "media" | "renders" | "secrets" | "jobs" | "templates";
+export type CollectionName = "users" | "projects" | "versions" | "brandkits" | "media" | "renders" | "secrets" | "jobs" | "templates" | "posts" | "tokens";
 
 export interface Row<T> {
   id: string;
