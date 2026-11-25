@@ -8,6 +8,26 @@ Three.js (3D) · Fabric.js (canvas interaction) · PostgreSQL/Supabase · Redis 
 
 ---
 
+## Installeren op je computer (Windows / Mac)
+
+1. **Node.js 22 LTS** installeren: https://nodejs.org (de "LTS"-knop).
+2. **FFmpeg** installeren:
+   - Windows: open *Terminal* / *PowerShell* en typ `winget install Gyan.FFmpeg` (sluit daarna de terminal).
+   - Mac: installeer Homebrew (https://brew.sh) en typ `brew install ffmpeg`.
+3. **Downloaden**: op GitHub → deze repository → branch `claude/ai-video-ads-creator-ulv24u` →
+   groene knop **Code → Download ZIP**, en pak de ZIP uit.
+4. **Starten**: open de map `studio` en
+   - Windows: dubbelklik **`start-windows.bat`**
+   - Mac: open Terminal, sleep `start-mac-linux.sh` in het venster en druk Enter
+     (of `cd` naar de map en typ `./start-mac-linux.sh`).
+
+De eerste keer installeert het script alles en bouwt het de app (5–10 minuten). Daarna opent
+http://localhost:3000 vanzelf; maak een account aan. Volgende keren start het binnen een minuut.
+Laat het venster open zolang je de studio gebruikt (dat venster maakt ook de MP4's en plaatst de geplande posts).
+Je gegevens staan in de map `studio/storage`.
+
+---
+
 ## Quick start (local)
 
 Requirements: Node 22+, `ffmpeg`/`ffprobe` on PATH.
