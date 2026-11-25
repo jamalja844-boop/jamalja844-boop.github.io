@@ -1,0 +1,15 @@
+id: social-content-week
+naam: Wekelijkse socialmediacontent klaarzetten
+doel: Elke week een goedgekeurde set posts per bedrijf klaar in Metricool (ter review)
+eigenaar: automation-manager
+status: actief
+trigger: {type: schema, bron: claude-geplande-taak, details: "vrijdag 10:13 Europe/Amsterdam (na akkoord aanmaken)"}
+voorwaarden:
+  - Metricool-brand verbonden (Clean = 8165491)
+stappen:
+  - {id: s1, agent: content-strategist, actie: "weekthema's en briefings volgende week", integratie: geen, goedkeuring_vereist: false}
+  - {id: s2, agent: social-media-manager, actie: "posts + beeldprompts maken; bestaande planning checken (getScheduledPosts)", integratie: metricool, goedkeuring_vereist: false, hangt_af_van: [s1]}
+  - {id: s3, agent: orchestrator, actie: "weekset ter goedkeuring", integratie: geen, goedkeuring_vereist: true}
+  - {id: s4, agent: social-media-manager, actie: "createScheduledPostForReview voor goedgekeurde posts", integratie: metricool, goedkeuring_vereist: true}
+foutafhandeling: {retries: 3, backoff: exponentieel, bij_falen: "posts als bestand in reports/social/ laten staan en melden"}
+logging: {activiteitenlog: memory/logs/activity-log.md, rapport: reports/social/}

@@ -1,0 +1,4 @@
+bedrijfsnaam;website;vestigingsplaats;branche;zakelijk_email;zakelijk_telefoon;bron_url;controledatum;mogelijke_behoefte;prioriteit;opmerkingen
+Voorbeeld Kantoor BV;https://www.voorbeeld.example;Utrecht;Kantoor;info@voorbeeld.example;030 123 4567;https://www.voorbeeld.example/contact;2026-11-25;test;A;TESTDATA
+Voorbeeld Kantoor B.V.;voorbeeld.example;Utrecht;Kantoor;info@voorbeeld.example;0301234567;https://www.voorbeeld.example/contact;2026-11-25;test;A;TESTDATA duplicaat
+Persoon Test;https://persoon.example;Zeist;Tandarts;jan.jansen@persoon.example;0612345678;https://persoon.example;25-11-2026;test;B;TESTDATA fouten

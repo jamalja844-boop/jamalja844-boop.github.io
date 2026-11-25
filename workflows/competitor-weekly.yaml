@@ -1,0 +1,13 @@
+id: competitor-weekly
+naam: Wekelijks concurrentierapport
+doel: Elke maandag een rapport met wijzigingen en kansen, elke bevinding met bron en datum
+eigenaar: automation-manager
+status: actief
+trigger: {type: schema, bron: claude-geplande-taak, details: "maandag 07:47 Europe/Amsterdam (na akkoord aanmaken)"}
+voorwaarden:
+  - concurrentenlijst in memory/competitors/
+stappen:
+  - {id: s1, agent: competitor-tracker, actie: "snapshots vernieuwen + diff + kansen", integratie: firecrawl, goedkeuring_vereist: false}
+  - {id: s2, agent: automation-manager, actie: "rapport opslaan en optioneel naar Drive", integratie: google-drive, goedkeuring_vereist: true}
+foutafhandeling: {retries: 3, backoff: exponentieel, bij_falen: "concurrent markeren als 'niet bereikbaar' met datum"}
+logging: {activiteitenlog: memory/logs/activity-log.md, rapport: reports/competitors/}

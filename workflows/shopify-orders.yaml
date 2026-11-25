@@ -1,0 +1,15 @@
+id: shopify-orders
+naam: Shopify-bestellingen NobleNest verwerken
+doel: Dagelijks overzicht van nieuwe/onverzonden bestellingen en signalering van uitzonderingen
+eigenaar: automation-manager
+status: actief
+trigger: {type: schema, bron: claude-geplande-taak, details: "dagelijks 08:52 Europe/Amsterdam (na akkoord aanmaken)"}
+voorwaarden:
+  - Shopify verbonden (noblenest.nl)
+stappen:
+  - {id: s1, agent: automation-manager, actie: "orders laatste 24 u via graphql_query (unfulfilled, risico, retour)", integratie: shopify, goedkeuring_vereist: false}
+  - {id: s2, agent: automation-manager, actie: "dagrapport + lage voorraad signaleren", integratie: shopify, goedkeuring_vereist: false}
+  - {id: s3, agent: campaign-manager, actie: "concept klantberichten bij vertraging", integratie: geen, goedkeuring_vereist: false}
+  - {id: s4, agent: automation-manager, actie: "fulfilment/annulering/refund uitvoeren", integratie: shopify, goedkeuring_vereist: true}
+foutafhandeling: {retries: 3, backoff: exponentieel, bij_falen: "rapport met foutmelding opslaan en eigenaar melden"}
+logging: {activiteitenlog: memory/logs/activity-log.md, rapport: reports/automation/}

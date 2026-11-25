@@ -1,0 +1,19 @@
+id: lead-generation
+naam: Nieuwe zakelijke klanten zoeken
+doel: Gekwalificeerde B2B-leads + marktcontext + conceptberichten ter goedkeuring
+eigenaar: orchestrator
+status: actief
+trigger: {type: handmatig, bron: gebruiker, details: "zoek nieuwe zakelijke klanten voor <bedrijf> in <regio>"}
+voorwaarden:
+  - merkprofiel aanwezig in memory/brands/
+  - regio en branches bekend
+stappen:
+  - {id: s1, agent: lead-finder, actie: "leads zoeken, verifiëren, ontdubbelen -> reports/leads/", integratie: firecrawl, goedkeuring_vereist: false, parallel_met: s2}
+  - {id: s2, agent: competitor-tracker, actie: "marktinformatie zelfde regio/branches -> reports/competitors/", integratie: firecrawl, goedkeuring_vereist: false}
+  - {id: s3, agent: orchestrator, actie: "bedrijfsgegevens in merkprofiel controleren", integratie: geen, goedkeuring_vereist: false}
+  - {id: s4, agent: campaign-manager, actie: "conceptberichten per branche + compliance-check", integratie: geen, goedkeuring_vereist: false, hangt_af_van: [s1, s2]}
+  - {id: s5, agent: orchestrator, actie: "goedkeuringsoverzicht presenteren", integratie: geen, goedkeuring_vereist: true}
+  - {id: s6, agent: campaign-manager, actie: "alleen goedgekeurde berichten verzenden via gekoppeld kanaal", integratie: gmail, goedkeuring_vereist: true}
+  - {id: s7, agent: automation-manager, actie: "CRM + activiteitenlog bijwerken", integratie: google-drive, goedkeuring_vereist: true}
+foutafhandeling: {retries: 3, backoff: exponentieel, bij_falen: "stap overslaan, melden in rapport, doorgaan met overige stappen"}
+logging: {activiteitenlog: memory/logs/activity-log.md, rapport: reports/orchestrator/}

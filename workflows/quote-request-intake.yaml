@@ -1,0 +1,17 @@
+id: quote-request-intake
+naam: Nieuwe offerteaanvraag verwerken
+doel: Elke offerteaanvraag binnen 1 werkdag geregistreerd, beantwoord (concept) en ingepland voor opvolging
+eigenaar: automation-manager
+status: wacht-op-koppeling
+trigger: {type: webhook, bron: "websiteformulier / Gmail-label 'offerte' (n8n of Gmail-koppeling nodig)", details: "payload: naam, bedrijf, e-mail, telefoon, adres, dienst, m2, frequentie, bericht"}
+voorwaarden:
+  - aanvraag nog niet eerder verwerkt (idempotentiesleutel = e-mail + datum + dienst)
+  - verplichte velden aanwezig (anders vraag om aanvulling)
+stappen:
+  - {id: s1, agent: automation-manager, actie: "klantgegevens registreren in CRM-sheet 'Clean AI Belassistent CRM'", integratie: google-drive, goedkeuring_vereist: false}
+  - {id: s2, agent: campaign-manager, actie: "conceptantwoord + ontbrekende vragen", integratie: geen, goedkeuring_vereist: false}
+  - {id: s3, agent: automation-manager, actie: "offerteconcept voorbereiden uit tarieventabel (door eigenaar aan te leveren)", integratie: google-drive, goedkeuring_vereist: false}
+  - {id: s4, agent: campaign-manager, actie: "antwoord versturen", integratie: gmail, goedkeuring_vereist: true}
+  - {id: s5, agent: automation-manager, actie: "bezichtiging inplannen + herinneringen D+3/D+7/D+14", integratie: google-calendar, goedkeuring_vereist: true}
+foutafhandeling: {retries: 3, backoff: exponentieel, bij_falen: "aanvraag markeren als 'handmatig' en eigenaar melden"}
+logging: {activiteitenlog: memory/logs/activity-log.md, rapport: reports/automation/}

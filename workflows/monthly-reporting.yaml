@@ -1,0 +1,14 @@
+id: monthly-reporting
+naam: Maandrapportage marketing
+doel: Eén rapport per bedrijf met social, advertenties, website en Shopify-cijfers (alleen echte data)
+eigenaar: automation-manager
+status: actief
+trigger: {type: schema, bron: claude-geplande-taak, details: "1e van de maand 09:17 Europe/Amsterdam (na akkoord aanmaken)"}
+voorwaarden:
+  - minimaal één databron verbonden
+stappen:
+  - {id: s1, agent: social-media-manager, actie: "social-analytics vorige maand (Metricool)", integratie: metricool, goedkeuring_vereist: false, parallel_met: s2}
+  - {id: s2, agent: automation-manager, actie: "ads (Supermetrics FA/AW) + Shopify-omzet", integratie: supermetrics, goedkeuring_vereist: false}
+  - {id: s3, agent: content-strategist, actie: "inzichten en aanbevelingen volgende maand", integratie: geen, goedkeuring_vereist: false, hangt_af_van: [s1, s2]}
+foutafhandeling: {retries: 3, backoff: exponentieel, bij_falen: "sectie markeren als 'data niet beschikbaar' met reden"}
+logging: {activiteitenlog: memory/logs/activity-log.md, rapport: reports/monthly/}
