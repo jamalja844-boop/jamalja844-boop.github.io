@@ -1,0 +1,18 @@
+{"naam":"Olympus Schoonmaak","domein":"olympusschoonmaak.nl","regio":"Utrecht","gecontroleerd":"2026-11-25",
+ "diensten":[
+  {"naam":"Kantoorschoonmaak (werkplekken, vergaderruimtes, pantry, sanitair, entree/verkeersruimtes) via werkprogramma per ruimte","bron":"https://www.olympusschoonmaak.nl/schoonmaak-kantoor-utrecht"},
+  {"naam":"Schoonmaak bedrijfsverzamelgebouwen / gedeelde ruimtes","bron":"https://www.olympusschoonmaak.nl/schoonmaak-kantoor-utrecht"},
+  {"naam":"Periodieke glasbewassing en vloerbehandeling (afzonderlijk beschreven)","bron":"https://www.olympusschoonmaak.nl/schoonmaak-kantoor-utrecht"},
+  {"naam":"Werkapp met uitvoeringsregistratie (min. 3 foto's waar van toepassing) en maandelijkse menselijke kwaliteitscontrole bij vaste contracten","bron":"https://www.olympusschoonmaak.nl/schoonmaak-kantoor-utrecht"}
+ ],
+ "prijzen":[
+  {"dienst":"Kantoorschoonmaak, 1x per week (minimumprijs, online maandindicatie-calculator op m2 en bezoeken/week)","prijs":"EUR 400,00","eenheid":"per maand, excl. btw","bron":"https://www.olympusschoonmaak.nl/schoonmaak-kantoor-utrecht","datum":"2026-11-25"}
+ ],
+ "acties":[],
+ "usps":[
+  {"omschrijving":"Reactie op werkdagen binnen 24 uur; na akkoord veel locaties binnen vijf werkdagen opstarten","bron":"https://www.olympusschoonmaak.nl/schoonmaak-kantoor-utrecht","datum":"2026-11-25"},
+  {"omschrijving":"Vaste schoonmakers, vervanging met locatie-instructies; actieve Utrecht-specifieke blogcontent (bijgewerkt o.a. 2026-11-23)","bron":"https://www.olympusschoonmaak.nl/schoonmaak-kantoor-utrecht","datum":"2026-11-25"}
+ ],
+ "social":[],
+ "reviews":{"platform":null,"score":null,"aantal":null,"bron":null,"datum":"2026-11-25"},
+ "seo":{"zoekwoorden_top10":null,"bron":"OpenRush","datum":null,"opmerking":"Niet onderzocht in testopdracht. Wel nr. 1 in Firecrawl-zoekresultaat 'zakelijke schoonmaak Utrecht kantoorschoonmaak bedrijf' op 2026-11-25."}}
