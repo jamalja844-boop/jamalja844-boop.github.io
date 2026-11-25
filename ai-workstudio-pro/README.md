@@ -36,9 +36,19 @@ ai-workstudio-pro/
 
 ## Installatie
 
-### Snelste weg (Windows, macOS, Linux)
+### Windows: installeren met dubbelklikken (aanbevolen)
 
-Je hebt nodig: **Node.js 22+**, **Git** en **Docker Desktop** (gestart). De database draait automatisch in Docker; PostgreSQL apart installeren is niet nodig.
+1. Installeer **Node.js LTS**: https://nodejs.org (standaardopties).
+2. Download de software: open https://github.com/jamalja844-boop/jamalja844-boop.github.io/tree/claude/ai-engineering-studio-idshob → groene knop **Code** → **Download ZIP**. Pak het ZIP-bestand uit (rechtsklik → *Alles uitpakken*). Git is hiervoor niet nodig.
+3. Open de uitgepakte map en daarin de map **ai-workstudio-pro**.
+4. Dubbelklik op **installeren.cmd**. Dit installeert alles, zet de database klaar en opent daarna de browser op http://localhost:3000.
+   - Draait **Docker Desktop**? Dan komt de database automatisch in Docker.
+   - **Geen Docker** (of wil het niet installeren)? Het script vraagt dan om de verbindingsregel van een **gratis online database**: maak een project op https://supabase.com (knop *Connect* → *Session pooler*) of https://neon.tech en plak de regel. Alleen de commando's in AI Code hebben Docker nodig; AI Chat, Schrijfstudio en Cowork werken zonder.
+5. Daarna starten: dubbelklik op **starten.cmd**. Laat het zwarte venster open zolang je de software gebruikt.
+
+Lukt iets niet? Het venster blijft open met de melding; maak daar een schermafbeelding van.
+
+### Met opdrachten (Windows PowerShell, macOS, Linux)
 
 > **Windows:** typ de opdrachten in **PowerShell** (Start → typ *PowerShell*), **niet** in het venster *Node.js*. Dat venster begrijpt alleen JavaScript en geeft fouten als `Unexpected identifier 'clone'`.
 
@@ -52,12 +62,12 @@ npm run dev
 
 Open daarna **http://localhost:3000** en maak het beheerdersaccount aan.
 
-`npm run setup` controleert Node.js en Docker, start PostgreSQL + pgvector in de container `workstudio-db` (poort 5433), maakt `apps/web/.env` met een willekeurige encryptiesleutel (een bestaand bestand wordt nooit overschreven), haalt het sandbox-image voor AI Code op en voert de migraties uit. Je kunt het veilig opnieuw draaien. Volgende keer starten: Docker Desktop openen en `npm run dev`.
+`npm run setup` controleert Node.js en Docker, zet de database klaar (in Docker, of een online database die je opgeeft – ook mogelijk met `npm run setup -- --database-url "postgres://…"`), maakt `apps/web/.env` met een willekeurige encryptiesleutel (een bestaand bestand wordt nooit overschreven), haalt het sandbox-image voor AI Code op en voert de migraties uit. Je kunt het veilig opnieuw draaien.
 
 Problemen:
-- *`git` wordt niet herkend* → installeer Git: https://git-scm.com/download/win en open PowerShell opnieuw.
-- *`npm` wordt niet herkend* → installeer Node.js (LTS): https://nodejs.org en open PowerShell opnieuw.
-- *Docker draait niet* → start Docker Desktop en wacht tot het "Engine running" meldt.
+- *`git` wordt niet herkend* → gebruik **Download ZIP** (zie hierboven), of installeer Git: https://git-scm.com/download/win
+- *`npm` of `node` wordt niet herkend* → installeer Node.js (LTS) en open het venster opnieuw.
+- *Docker Desktop wil niet installeren of starten* (vaak: WSL2 of virtualisatie staat uit) → sla Docker over en kies een online database (Supabase of Neon).
 - *Poort 3000 in gebruik* → sluit het andere programma of start met `npm run dev -w @workstudio/web -- -p 3001`.
 
 ### Handmatig (eigen PostgreSQL)
