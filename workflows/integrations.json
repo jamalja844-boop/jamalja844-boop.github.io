@@ -1,0 +1,26 @@
+{
+  "_doc": "Status van integraties. 'connector' = claude.ai-connector (beheerd via claude.ai > Instellingen > Connectors, sleutels staan niet in deze repo). Bijgewerkt door de skill integration-check (ListConnectors + alleen-lezen smoke test). Niet handmatig op 'werkt' zetten zonder test.",
+  "last_verified": "2026-11-25",
+  "integrations": {
+    "GitHub": {"type": "connector + plugin", "status": "werkt", "test": "mcp__github__get_me -> login ok", "agents": ["tool-runner", "software-developer", "security"]},
+    "Shopify": {"type": "connector + plugin shopify-ai-toolkit", "status": "werkt", "test": "get-shop-info -> winkel NobleNest (EUR, NL)", "agents": ["e-commerce"]},
+    "Metricool": {"type": "connector", "status": "werkt", "test": "getBrandSettings -> 1 merk (Clean schoonmaakbedrijf)", "agents": ["social-media", "marketing"]},
+    "Google Drive": {"type": "connector", "status": "werkt", "test": "list_recent_files -> bestanden zichtbaar", "agents": ["research", "sales", "finance"]},
+    "Figma": {"type": "connector", "status": "werkt", "test": "whoami -> starter-team", "agents": ["ui-ux"]},
+    "Semrush": {"type": "connector", "status": "verbonden (niet getest: kost API-units)", "agents": ["seo"]},
+    "OpenRush": {"type": "connector", "status": "verbonden (niet getest)", "agents": ["seo"]},
+    "Supermetrics": {"type": "connector", "status": "verbonden (niet getest)", "agents": ["marketing"]},
+    "Firecrawl": {"type": "connector", "status": "verbonden (niet getest: betaald)", "agents": ["research"]},
+    "HyperFrames by HeyGen": {"type": "connector", "status": "verbonden (alleen-lezen tools toegewezen)", "agents": ["video"]},
+    "ElevenLabs": {"type": "connector", "status": "verbonden (alleen-lezen tools toegewezen)", "agents": ["video"]},
+    "Google Chrome": {"type": "Claude in Chrome", "status": "niet beschikbaar in cloudsessie; headless Chromium + Playwright wel", "agents": ["browser"]},
+    "Playwright": {"type": "plugin + lokaal geïnstalleerd", "status": "werkt (lokaal)", "agents": ["browser", "frontend", "qa"]},
+    "Gmail": {"type": "connector", "status": "niet verbonden", "agents": ["customer-service", "sales"]},
+    "Outlook": {"type": "connector", "status": "niet verbonden", "agents": ["customer-service", "sales"]},
+    "Google Calendar": {"type": "connector", "status": "niet verbonden", "agents": ["project-manager", "hr"]},
+    "Supabase": {"type": "connector", "status": "geïnstalleerd, opnieuw verbinden nodig (needs_reconnect)", "agents": ["backend"]},
+    "WordPress": {"type": "-", "status": "niet verbonden", "agents": ["frontend", "seo"]},
+    "Canva": {"type": "-", "status": "niet verbonden", "agents": ["ui-ux", "social-media"]},
+    "OpenAI": {"type": "API-sleutel via omgevingsvariabele OPENAI_API_KEY", "status": "niet geconfigureerd", "agents": ["automation"]}
+  }
+}

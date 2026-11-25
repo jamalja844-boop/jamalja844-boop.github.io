@@ -1,0 +1,9 @@
+# GitHub Pages (Jekyll): publiceer alleen de website, niet het AI-agentsysteem.
+exclude:
+  - CLAUDE.md
+  - memory/
+  - logs/
+  - workflows/
+  - tests/
+  - docs/
+  - README.md

@@ -1,0 +1,18 @@
+{
+  "_doc": "Toegangsregels voor memory/. Afgedwongen door .claude/hooks/memory_acl.py voor subagents (agent_type). De hoofdsessie (CEO/orchestrator) heeft volledige toegang. '*' = iedere agent. Langste prefix wint.",
+  "rules": {
+    "memory/": {"read": ["*"], "write": ["ceo", "project-manager"]},
+    "memory/README.md": {"read": ["*"], "write": ["ceo"]},
+    "memory/acl.json": {"read": ["*"], "write": []},
+    "memory/company/": {"read": ["*"], "write": ["ceo", "project-manager"]},
+    "memory/knowledge/": {"read": ["*"], "write": ["*"]},
+    "memory/projects/": {"read": ["*"], "write": ["ceo", "project-manager", "research", "software-developer", "frontend", "backend", "ui-ux", "qa", "security", "automation", "marketing", "seo", "social-media", "video", "e-commerce", "sales", "tool-runner", "browser", "skill-curator", "customer-service", "finance", "hr"]},
+    "memory/tasks/": {"read": ["*"], "write": ["*"]},
+    "memory/messages/": {"read": ["*"], "write": ["*"]},
+    "memory/approvals/": {"read": ["*"], "write": ["approval-gate", "ceo", "project-manager"]},
+    "memory/hr/": {"read": ["hr", "ceo"], "write": ["hr"]},
+    "memory/finance/": {"read": ["finance", "ceo", "sales"], "write": ["finance"]},
+    "memory/customers/": {"read": ["customer-service", "sales", "e-commerce", "ceo", "marketing"], "write": ["customer-service", "sales", "e-commerce"]}
+  },
+  "always_deny": [".env", ".env.", "secrets/", ".pem", ".key", "id_rsa", "credentials.json", ".claude/settings.local.json"]
+}

@@ -1,0 +1,30 @@
+# Geheimen - nooit committen
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+.claude/settings.local.json
+
+# Logs (audit, fouten, kosten) - lokaal
+logs/*
+!logs/.gitkeep
+
+# Vertrouwelijk/run-time geheugen - lokaal (repo is openbaar!)
+memory/hr/*
+memory/finance/*
+memory/customers/*
+memory/approvals/*
+memory/messages/*
+memory/tasks/*
+memory/projects/*
+memory/knowledge/errors.jsonl
+!memory/**/.gitkeep
+!memory/**/README.md
+
+# Tests
+tests/live/sandbox/
+tests/live/results/
+__pycache__/
+*.pyc

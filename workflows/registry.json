@@ -1,0 +1,546 @@
+{
+  "_doc": "Centraal register van afdelingen, agents, routeringstrefwoorden, skills en goedkeuringsregels. Gebruikt door workflows/engine/router.py, skills.py en de router-agent. Trefwoorden zijn kleine letters zonder accenten.",
+  "departments": {
+    "directie": [
+      "ceo",
+      "project-manager",
+      "router",
+      "approval-gate"
+    ],
+    "development": [
+      "software-developer",
+      "frontend",
+      "backend",
+      "ui-ux",
+      "automation",
+      "tool-runner",
+      "browser"
+    ],
+    "kwaliteit": [
+      "qa",
+      "security"
+    ],
+    "kennis": [
+      "research",
+      "skill-curator"
+    ],
+    "marketing": [
+      "marketing",
+      "seo",
+      "social-media",
+      "video"
+    ],
+    "commercie": [
+      "sales",
+      "e-commerce",
+      "customer-service"
+    ],
+    "bedrijfsvoering": [
+      "finance",
+      "hr"
+    ]
+  },
+  "agents": {
+    "ceo": {
+      "keywords": [
+        "strategie",
+        "bedrijfsplan",
+        "prioriteit",
+        "coordineer",
+        "hele team",
+        "alle afdelingen",
+        "complete aanpak",
+        "groeiplan"
+      ],
+      "skills": [
+        "memory-protocol",
+        "quality-gate",
+        "parallel-fanout",
+        "sequential-delivery"
+      ]
+    },
+    "project-manager": {
+      "keywords": [
+        "planning",
+        "projectplan",
+        "deadline",
+        "mijlpaal",
+        "roadmap",
+        "sprint",
+        "voortgang",
+        "takenlijst",
+        "project"
+      ],
+      "skills": [
+        "sequential-delivery",
+        "parallel-fanout",
+        "memory-protocol"
+      ]
+    },
+    "router": {
+      "keywords": [
+        "wie moet",
+        "welke agent",
+        "routeer",
+        "doorverwijzen"
+      ],
+      "skills": [
+        "task-routing"
+      ]
+    },
+    "approval-gate": {
+      "keywords": [
+        "toestemming",
+        "goedkeuring",
+        "akkoord"
+      ],
+      "skills": [
+        "human-approval"
+      ]
+    },
+    "research": {
+      "keywords": [
+        "onderzoek",
+        "onderzoeken",
+        "zoek uit",
+        "concurrent",
+        "concurrentie",
+        "marktonderzoek",
+        "bronnen",
+        "vergelijk",
+        "analyseer de markt",
+        "trends"
+      ],
+      "skills": [
+        "memory-protocol"
+      ]
+    },
+    "software-developer": {
+      "keywords": [
+        "code",
+        "programmeer",
+        "script",
+        "bug",
+        "refactor",
+        "functie",
+        "python",
+        "javascript",
+        "typescript",
+        "applicatie",
+        "app bouwen"
+      ],
+      "skills": [
+        "secure-dev",
+        "quality-gate"
+      ]
+    },
+    "frontend": {
+      "keywords": [
+        "website",
+        "webpagina",
+        "landingspagina",
+        "html",
+        "css",
+        "react",
+        "interface",
+        "responsive",
+        "homepage",
+        "pagina"
+      ],
+      "skills": [
+        "frontend-design",
+        "secure-dev"
+      ]
+    },
+    "backend": {
+      "keywords": [
+        "api",
+        "database",
+        "endpoint",
+        "server",
+        "supabase",
+        "sql",
+        "backend",
+        "authenticatie",
+        "webhook"
+      ],
+      "skills": [
+        "secure-dev"
+      ]
+    },
+    "ui-ux": {
+      "keywords": [
+        "ontwerp",
+        "design",
+        "figma",
+        "wireframe",
+        "mockup",
+        "huisstijl",
+        "gebruikerservaring",
+        "ux",
+        "ui",
+        "prototype",
+        "canva"
+      ],
+      "skills": [
+        "frontend-design",
+        "brand-guidelines"
+      ]
+    },
+    "security": {
+      "keywords": [
+        "beveiliging",
+        "security",
+        "privacy",
+        "avg",
+        "gdpr",
+        "kwetsbaarheid",
+        "wachtwoord",
+        "api-sleutel",
+        "lek",
+        "pentest",
+        "secrets"
+      ],
+      "skills": [
+        "secure-dev"
+      ]
+    },
+    "qa": {
+      "keywords": [
+        "test",
+        "testen",
+        "kwaliteitscontrole",
+        "controleer",
+        "review",
+        "fouten zoeken",
+        "qa"
+      ],
+      "skills": [
+        "quality-gate",
+        "webapp-testing"
+      ]
+    },
+    "marketing": {
+      "keywords": [
+        "marketing",
+        "campagne",
+        "doelgroep",
+        "merk",
+        "positionering",
+        "advertentie",
+        "ads",
+        "funnel",
+        "marketingplan",
+        "nieuwsbrief"
+      ],
+      "skills": [
+        "social-content-plan"
+      ]
+    },
+    "seo": {
+      "keywords": [
+        "seo",
+        "zoekwoord",
+        "zoekwoorden",
+        "keyword",
+        "ranking",
+        "google ranking",
+        "meta",
+        "backlink",
+        "zoekmachine",
+        "vindbaarheid"
+      ],
+      "skills": [
+        "seo-audit"
+      ]
+    },
+    "social-media": {
+      "keywords": [
+        "social media",
+        "instagram",
+        "tiktok",
+        "facebook",
+        "linkedin",
+        "post",
+        "posts",
+        "contentkalender",
+        "metricool",
+        "reel",
+        "youtube shorts"
+      ],
+      "skills": [
+        "social-content-plan"
+      ]
+    },
+    "sales": {
+      "keywords": [
+        "offerte",
+        "verkoop",
+        "lead",
+        "leads",
+        "prijsvoorstel",
+        "klantwerving",
+        "pitch",
+        "crm",
+        "acquisitie"
+      ],
+      "skills": [
+        "quote-offerte",
+        "finance-calc"
+      ]
+    },
+    "finance": {
+      "keywords": [
+        "factuur",
+        "btw",
+        "boekhouding",
+        "begroting",
+        "kosten",
+        "omzet",
+        "winst",
+        "berekening",
+        "administratie",
+        "cashflow",
+        "marge"
+      ],
+      "skills": [
+        "finance-calc"
+      ]
+    },
+    "automation": {
+      "keywords": [
+        "automatiseer",
+        "automatisering",
+        "integratie",
+        "koppeling",
+        "workflow",
+        "zapier",
+        "make.com",
+        "n8n",
+        "cron",
+        "mcp"
+      ],
+      "skills": [
+        "integration-check",
+        "mcp-builder"
+      ]
+    },
+    "customer-service": {
+      "keywords": [
+        "klant",
+        "klacht",
+        "klantvraag",
+        "reactie aan klant",
+        "antwoord klant",
+        "retour",
+        "klantenservice",
+        "review beantwoorden"
+      ],
+      "skills": [
+        "customer-reply"
+      ]
+    },
+    "hr": {
+      "keywords": [
+        "personeel",
+        "vacature",
+        "sollicitatie",
+        "medewerker",
+        "verlof",
+        "contract",
+        "onboarding",
+        "rooster",
+        "hr"
+      ],
+      "skills": [
+        "memory-protocol"
+      ]
+    },
+    "video": {
+      "keywords": [
+        "video",
+        "script",
+        "voice-over",
+        "storyboard",
+        "filmpje",
+        "montage",
+        "heygen",
+        "elevenlabs"
+      ],
+      "skills": [
+        "video-script"
+      ]
+    },
+    "e-commerce": {
+      "keywords": [
+        "shopify",
+        "webshop",
+        "product ",
+        "producten",
+        "voorraad",
+        "bestelling",
+        "collectie",
+        "korting",
+        "noblenest",
+        "checkout"
+      ],
+      "skills": [
+        "shopify-ops"
+      ]
+    },
+    "browser": {
+      "keywords": [
+        "browser",
+        "screenshot",
+        "scrape",
+        "website bezoeken",
+        "formulier invullen",
+        "playwright",
+        "chrome"
+      ],
+      "skills": [
+        "webapp-testing"
+      ]
+    },
+    "tool-runner": {
+      "keywords": [
+        "voer uit",
+        "commando",
+        "terminal",
+        "bestand",
+        "bestanden",
+        "cli",
+        "tool"
+      ],
+      "skills": [
+        "integration-check"
+      ]
+    },
+    "skill-curator": {
+      "keywords": [
+        "skill",
+        "skills",
+        "werkinstructie",
+        "werkproces vastleggen",
+        "herbruikbaar"
+      ],
+      "skills": [
+        "skill-authoring"
+      ]
+    }
+  },
+  "pipelines": {
+    "build": {
+      "triggers": [
+        "bouw",
+        "ontwikkel",
+        "maak een website",
+        "maak een app",
+        "implementeer",
+        "nieuwe functie"
+      ],
+      "workflow": "sequential-delivery"
+    },
+    "campaign": {
+      "triggers": [
+        "campagne",
+        "lancering",
+        "launch",
+        "marketingplan"
+      ],
+      "workflow": "parallel-fanout"
+    }
+  },
+  "approval_rules": [
+    {
+      "id": "email",
+      "label": "E-mail of bericht naar klanten/externen versturen",
+      "keywords": [
+        "verstuur",
+        "verzend",
+        "mail naar",
+        "stuur een mail",
+        "stuur de mail",
+        "e-mail versturen",
+        "bericht sturen naar klant",
+        "nieuwsbrief versturen"
+      ]
+    },
+    {
+      "id": "payment",
+      "label": "Betaling uitvoeren of credits kopen",
+      "keywords": [
+        "betaal",
+        "betaling",
+        "overboeking",
+        "koop credits",
+        "afrekenen"
+      ]
+    },
+    {
+      "id": "ad_budget",
+      "label": "Advertentiebudget wijzigen",
+      "keywords": [
+        "budget verhogen",
+        "budget verlagen",
+        "advertentiebudget",
+        "ad budget",
+        "bod aanpassen",
+        "campagne starten"
+      ]
+    },
+    {
+      "id": "publish",
+      "label": "Content openbaar publiceren",
+      "keywords": [
+        "publiceer",
+        "plaats online",
+        "zet live",
+        "post plaatsen",
+        "inplannen",
+        "live zetten",
+        "deploy",
+        "plan ze in",
+        "plan het in",
+        "plan deze in",
+        "publiceren",
+        "openbaar maken"
+      ]
+    },
+    {
+      "id": "delete",
+      "label": "Bestanden of data definitief verwijderen",
+      "keywords": [
+        "verwijder",
+        "wis ",
+        "delete",
+        "prullenbak",
+        "verwijderen"
+      ]
+    },
+    {
+      "id": "production",
+      "label": "Productiesysteem wijzigen",
+      "keywords": [
+        "productie",
+        "live store",
+        "live website",
+        "main branch",
+        "prijzen aanpassen",
+        "theme publiceren"
+      ]
+    },
+    {
+      "id": "confidential",
+      "label": "Vertrouwelijke gegevens delen",
+      "keywords": [
+        "deel met",
+        "delen met",
+        "stuur gegevens",
+        "persoonsgegevens",
+        "wachtwoord delen",
+        "toegang geven"
+      ]
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
       "source": {
@@ -13,5 +14,78 @@
     "playwright@claude-plugins-official": true,
     "github@claude-plugins-official": true,
     "shopify-ai-toolkit@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python3 workflows/engine/router.py *)",
+      "Bash(python3 workflows/engine/skills.py *)",
+      "Bash(python3 workflows/engine/pipeline.py *)",
+      "Bash(python3 workflows/engine/taskboard.py *)",
+      "Bash(python3 workflows/engine/calc.py *)",
+      "Bash(python3 workflows/engine/integrations.py *)",
+      "Bash(python3 workflows/engine/integrations.py)",
+      "Bash(python3 workflows/engine/validate.py)",
+      "Bash(python3 workflows/engine/quality_gate.py *)",
+      "Bash(python3 workflows/engine/quality_gate.py)",
+      "Bash(python3 -m unittest *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/id_rsa*)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/route_hint.py\"", "timeout": 10}
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__.*",
+        "hooks": [
+          {"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/hitl_guard.py\"", "timeout": 10}
+        ]
+      },
+      {
+        "matcher": "Read|Write|Edit|Glob|Grep|Bash|NotebookEdit",
+        "hooks": [
+          {"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/memory_acl.py\"", "timeout": 10}
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit_log.py\"", "timeout": 10}
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit_log.py\"", "timeout": 10}
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit_log.py\"", "timeout": 10}
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit_log.py\"", "timeout": 10}
+        ]
+      }
+    ]
   }
 }
