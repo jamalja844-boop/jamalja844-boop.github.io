@@ -22,7 +22,7 @@
 | WordPress | ❌ niet verbonden | — | REST-API + applicatiewachtwoord (beveiligd opslaan) of WordPress MCP-server toevoegen in `.mcp.json`. |
 | Canva | ❌ niet verbonden | — | Canva-connector toevoegen in claude.ai. Alternatief nu: Figma/Picsart. |
 | Supabase | ❌ niet verbonden | — | Supabase MCP toevoegen (token via omgevingsvariabele). |
-| n8n | ❌ niet verbonden | — | n8n-instantie + MCP/webhook-URL nodig; workflows staan klaar in `workflows/`. |
+| n8n | ⚠️ bestaat, niet aan Claude gekoppeld | CRM-sheet (tab Gesprekken) | Er draait al een n8n-flow die naar het CRM-sheet schrijft (timeout-fouten in node "Lees Instellingen" gezien op 2026-11-25). Voor koppeling: n8n MCP-server-URL of webhook-URL + API-sleutel via beveiligde credential-opslag. |
 
 ## Een MCP-server toevoegen aan `.mcp.json` (voorbeeld, nog niet actief)
 Voeg pas toe als de sleutel beschikbaar is; anders start de server niet. Sleutels **nooit** in dit bestand — gebruik `${VARIABELE}`:
